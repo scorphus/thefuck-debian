@@ -1,0 +1,3 @@
+version=3
+opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/thefuck-$1\.tar\.gz/ \
+  https://github.com/nvbn/thefuck/tags .*/(\d\S*)\.tar\.gz

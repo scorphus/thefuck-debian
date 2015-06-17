@@ -1,0 +1,27 @@
+---
+ thefuck/conf.py |    2 +-
+ thefuck/main.py |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- thefuck.orig/thefuck/conf.py
++++ thefuck/thefuck/conf.py
+@@ -38,7 +38,7 @@ ENV_TO_ATTR = {'THEFUCK_RULES': 'rules',
+                'THEFUCK_PRIORITY': 'priority'}
+ 
+ 
+-SETTINGS_HEADER = u"""# ~/.thefuck/settings.py: The Fuck settings file
++SETTINGS_HEADER = u"""# ~/.config/thefuck/settings.py: The Fuck settings file
+ #
+ # The rules are defined as in the example bellow:
+ #
+--- thefuck.orig/thefuck/main.py
++++ thefuck/thefuck/main.py
+@@ -12,7 +12,7 @@ from . import logs, conf, types, shells
+ 
+ def setup_user_dir():
+     """Returns user config dir, create it when it doesn't exist."""
+-    user_dir = Path(expanduser('~/.thefuck'))
++    user_dir = Path(expanduser('~/.config/thefuck'))
+     rules_dir = user_dir.joinpath('rules')
+     if not rules_dir.is_dir():
+         rules_dir.mkdir(parents=True)

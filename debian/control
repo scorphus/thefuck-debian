@@ -1,0 +1,33 @@
+Source: thefuck
+Priority: optional
+Section: python
+Maintainer: Alessio Treglia <alessio@debian.org>
+Build-Depends:
+ debhelper (>= 9~),
+ dh-python,
+ python-all,
+ python-setuptools
+X-Python-Version: 2.7
+Standards-Version: 3.9.6
+Homepage: https://github.com/nvbn/thefuck
+Vcs-Git: git://anonscm.debian.org/collab-maint/thefuck.git
+Vcs-Browser: http://anonscm.debian.org/cgit/collab-maint/thefuck.git
+
+Package: thefuck
+Architecture: all
+Depends:
+ ${python:Depends},
+ ${misc:Depends},
+ python-colorama,
+ python-pathlib,
+ python-psutil,
+ python-six
+Description: spelling corrector of console commands
+ The Fuck attempts to fix user's command line mistakes, by
+ composing new commands applying a series of matching rules.
+ It supports various shells, such as bash, fish, tcsh, and
+ zsh.
+ .
+ This package provides the Python 2 version of The Fuck as
+ python-pathlib currently lacks Python 3 support. Furthermore
+ the 'sudo' matching rule has been disabled for users' safety.

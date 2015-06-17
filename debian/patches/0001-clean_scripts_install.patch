@@ -1,0 +1,13 @@
+---
+ setup.py |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- thefuck.orig/setup.py
++++ thefuck/setup.py
+@@ -17,5 +17,5 @@ setup(name='thefuck',
+       zip_safe=False,
+       install_requires=['pathlib', 'psutil', 'colorama', 'six'],
+       entry_points={'console_scripts': [
+-          'thefuck = thefuck.main:main',
++          'thefuck.real = thefuck.main:main',
+           'thefuck-alias = thefuck.shells:app_alias']})

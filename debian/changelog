@@ -1,0 +1,5 @@
+thefuck (1.46-1) unstable; urgency=medium
+
+  * Initial release. (Closes: #783816)
+
+ -- Alessio Treglia <alessio@debian.org>  Wed, 17 Jun 2015 17:44:55 +0100

@@ -4,10 +4,10 @@
 
 --- thefuck.orig/setup.py
 +++ thefuck/setup.py
-@@ -17,5 +17,5 @@ setup(name='thefuck',
-       zip_safe=False,
-       install_requires=['pathlib', 'psutil', 'colorama', 'six'],
+@@ -40,5 +40,5 @@ setup(name='thefuck',
+       install_requires=install_requires,
+       extras_require=extras_require,
        entry_points={'console_scripts': [
 -          'thefuck = thefuck.main:main',
 +          'thefuck.real = thefuck.main:main',
-           'thefuck-alias = thefuck.shells:app_alias']})
+           'thefuck-alias = thefuck.main:print_alias']})

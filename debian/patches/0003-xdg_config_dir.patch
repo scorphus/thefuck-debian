@@ -5,8 +5,8 @@
 
 --- thefuck.orig/thefuck/conf.py
 +++ thefuck/thefuck/conf.py
-@@ -38,7 +38,7 @@ ENV_TO_ATTR = {'THEFUCK_RULES': 'rules',
-                'THEFUCK_PRIORITY': 'priority'}
+@@ -41,7 +41,7 @@ ENV_TO_ATTR = {'THEFUCK_RULES': 'rules',
+                'THEFUCK_DEBUG': 'debug'}
  
  
 -SETTINGS_HEADER = u"""# ~/.thefuck/settings.py: The Fuck settings file
@@ -16,7 +16,7 @@
  #
 --- thefuck.orig/thefuck/main.py
 +++ thefuck/thefuck/main.py
-@@ -12,7 +12,7 @@ from . import logs, conf, types, shells
+@@ -13,7 +13,7 @@ from . import logs, conf, types, shells
  
  def setup_user_dir():
      """Returns user config dir, create it when it doesn't exist."""

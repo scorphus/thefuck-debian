@@ -1,19 +1,29 @@
-from mock import patch, Mock
+import pytest
 from thefuck.rules.no_command import match, get_new_command
+from tests.utils import Command
 
 
+@pytest.fixture(autouse=True)
+def get_all_executables(mocker):
+    mocker.patch('thefuck.rules.no_command.get_all_executables',
+                 return_value=['vim', 'apt-get', 'fsck'])
+
+
+@pytest.mark.usefixtures('no_memoize')
 def test_match():
-    with patch('thefuck.rules.no_command._get_all_callables',
-               return_value=['vim', 'apt-get']):
-        assert match(Mock(stderr='vom: not found', script='vom file.py'), None)
-        assert not match(Mock(stderr='qweqwe: not found', script='qweqwe'), None)
-        assert not match(Mock(stderr='some text', script='vom file.py'), None)
+    assert match(Command(stderr='vom: not found', script='vom file.py'), None)
+    assert match(Command(stderr='fucck: not found', script='fucck'), None)
+    assert not match(Command(stderr='qweqwe: not found', script='qweqwe'), None)
+    assert not match(Command(stderr='some text', script='vom file.py'), None)
 
 
+@pytest.mark.usefixtures('no_memoize')
 def test_get_new_command():
-    with patch('thefuck.rules.no_command._get_all_callables',
-               return_value=['vim', 'apt-get']):
-        assert get_new_command(
-            Mock(stderr='vom: not found',
-                 script='vom file.py'),
-            None) == 'vim file.py'
+    assert get_new_command(
+        Command(stderr='vom: not found',
+                script='vom file.py'),
+        None) == 'vim file.py'
+    assert get_new_command(
+        Command(stderr='fucck: not found',
+                script='fucck'),
+        Command) == 'fsck'

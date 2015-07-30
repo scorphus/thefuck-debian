@@ -14,7 +14,8 @@ def test_load_rule(mocker):
         return_value=Mock(match=match,
                           get_new_command=get_new_command,
                           enabled_by_default=True,
-                          priority=900))
+                          priority=900,
+                          requires_output=True))
     assert main.load_rule(Path('/rules/bash.py')) \
            == Rule('bash', match, get_new_command, priority=900)
     load_source.assert_called_once_with('bash', '/rules/bash.py')
@@ -77,23 +78,23 @@ class TestGetCommand(object):
         monkeypatch.setattr('thefuck.shells.to_shell', lambda x: x)
 
     def test_get_command_calls(self, Popen):
-        assert main.get_command(Mock(),
+        assert main.get_command(Mock(env={}),
             ['thefuck', 'apt-get', 'search', 'vim']) \
                == Command('apt-get search vim', 'stdout', 'stderr')
         Popen.assert_called_once_with('apt-get search vim',
                                       shell=True,
                                       stdout=PIPE,
                                       stderr=PIPE,
-                                      env={'LANG': 'C'})
+                                      env={})
 
     @pytest.mark.parametrize('args, result', [
         (['thefuck', 'ls', '-la'], 'ls -la'),
         (['thefuck', 'ls'], 'ls')])
     def test_get_command_script(self, args, result):
         if result:
-            assert main.get_command(Mock(), args).script == result
+            assert main.get_command(Mock(env={}), args).script == result
         else:
-            assert main.get_command(Mock(), args) is None
+            assert main.get_command(Mock(env={}), args) is None
 
 
 class TestGetMatchedRule(object):
@@ -110,7 +111,7 @@ class TestGetMatchedRule(object):
     def test_when_rule_failed(self, capsys):
         main.get_matched_rule(
             Command('ls'), [Rule('test', Mock(side_effect=OSError('Denied')))],
-            Mock(no_colors=True))
+            Mock(no_colors=True, debug=False))
         assert capsys.readouterr()[1].split('\n')[0] == '[WARN] Rule test:'
 
 
@@ -126,7 +127,7 @@ class TestRunRule(object):
 
     def test_run_rule_with_side_effect(self, capsys):
         side_effect = Mock()
-        settings = Mock()
+        settings = Mock(debug=False)
         command = Command()
         main.run_rule(Rule(get_new_command=lambda *_: 'new-command',
                            side_effect=side_effect),
@@ -152,7 +153,7 @@ class TestConfirm(object):
 
     def test_with_side_effect_and_without_confirmation(self, capsys):
         assert main.confirm('command', Mock(), Mock(require_confirmation=False))
-        assert capsys.readouterr() == ('', 'command*\n')
+        assert capsys.readouterr() == ('', 'command (+side effect)\n')
 
     # `stdin` fixture should be applied after `capsys`
     def test_when_confirmation_required_and_confirmed(self, capsys, stdin):
@@ -164,7 +165,7 @@ class TestConfirm(object):
     def test_when_confirmation_required_and_confirmed_with_side_effect(self, capsys, stdin):
         assert main.confirm('command', Mock(), Mock(require_confirmation=True,
                                                     no_colors=True))
-        assert capsys.readouterr() == ('', 'command* [enter/ctrl+c]')
+        assert capsys.readouterr() == ('', 'command (+side effect) [enter/ctrl+c]')
 
     def test_when_confirmation_required_and_aborted(self, capsys, stdin):
         stdin.side_effect = KeyboardInterrupt

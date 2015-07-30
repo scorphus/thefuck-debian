@@ -7,13 +7,15 @@ patterns = ['permission denied',
             'root privilege',
             'This command has to be run under the root user.',
             'This operation requires root.',
-            'You need to be root to perform this command.',
             'requested operation requires superuser privilege',
             'must be run as root',
             'must be superuser',
-            'Need to be root',
-            'you must be root to run this program.',
-            'only root can do that']
+            'must be root',
+            'need to be root',
+            'need root',
+            'only root can ',
+            'You don\'t have access to the history DB.',
+            'authentication is required']
 
 
 def match(command, settings):

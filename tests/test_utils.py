@@ -1,6 +1,7 @@
 import pytest
 from mock import Mock
-from thefuck.utils import sudo_support, wrap_settings, memoize
+from thefuck.utils import git_support, sudo_support, wrap_settings,\
+    memoize, get_closest, get_all_executables, replace_argument
 from thefuck.types import Settings
 from tests.utils import Command
 
@@ -26,9 +27,75 @@ def test_sudo_support(return_value, command, called, result):
     fn.assert_called_once_with(Command(called), None)
 
 
+@pytest.mark.parametrize('called, command, stderr', [
+    ('git co', 'git checkout', "19:22:36.299340 git.c:282   trace: alias expansion: co => 'checkout'"),
+    ('git com file', 'git commit --verbose file', "19:23:25.470911 git.c:282   trace: alias expansion: com => 'commit' '--verbose'")])
+def test_git_support(called, command, stderr):
+    @git_support
+    def fn(command, settings): return command.script
+    assert fn(Command(script=called, stderr=stderr), None) == command
+
+
+@pytest.mark.parametrize('command, is_git', [
+    ('git pull', True),
+    ('hub pull', True),
+    ('git push --set-upstream origin foo', True),
+    ('hub push --set-upstream origin foo', True),
+    ('ls', False),
+    ('cat git', False),
+    ('cat hub', False)])
+def test_git_support_match(command, is_git):
+    @git_support
+    def fn(command, settings): return True
+    assert fn(Command(script=command), None) == is_git
+
+
 def test_memoize():
     fn = Mock(__name__='fn')
     memoized = memoize(fn)
     memoized()
     memoized()
     fn.assert_called_once_with()
+
+
+@pytest.mark.usefixtures('no_memoize')
+def test_no_memoize():
+    fn = Mock(__name__='fn')
+    memoized = memoize(fn)
+    memoized()
+    memoized()
+    assert fn.call_count == 2
+
+
+class TestGetClosest(object):
+
+    def test_when_can_match(self):
+        assert 'branch' == get_closest('brnch', ['branch', 'status'])
+
+    def test_when_cant_match(self):
+        assert 'status' == get_closest('st', ['status', 'reset'])
+
+    def test_without_fallback(self):
+        assert get_closest('st', ['status', 'reset'],
+                           fallback_to_first=False) is None
+
+
+@pytest.fixture
+def get_aliases(mocker):
+    mocker.patch('thefuck.shells.get_aliases',
+                 return_value=['vim', 'apt-get', 'fsck', 'fuck'])
+
+
+@pytest.mark.usefixtures('no_memoize', 'get_aliases')
+def test_get_all_callables():
+    all_callables = get_all_executables()
+    assert 'vim' in all_callables
+    assert 'fsck' in all_callables
+    assert 'fuck' not in all_callables
+
+
+@pytest.mark.parametrize('args, result', [
+    (('apt-get instol vim', 'instol', 'install'), 'apt-get install vim'),
+    (('git brnch', 'brnch', 'branch'), 'git branch')])
+def test_replace_argument(args, result):
+    assert replace_argument(*args) == result

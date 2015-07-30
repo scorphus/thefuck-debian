@@ -4,10 +4,11 @@ methods.
 
 """
 from collections import defaultdict
+from psutil import Process
 from subprocess import Popen, PIPE
 from time import time
+import io
 import os
-from psutil import Process
 from .utils import DEVNULL, memoize
 
 
@@ -32,8 +33,8 @@ class Generic(object):
         """Prepares command for running in shell."""
         return command_script
 
-    def app_alias(self):
-        return "\nalias fuck='eval $(thefuck $(fc -ln -1))'\n"
+    def app_alias(self, fuck):
+        return "alias {0}='TF_ALIAS={0} eval $(thefuck $(fc -ln -1))'".format(fuck)
 
     def _get_history_file_name(self):
         return ''
@@ -48,13 +49,34 @@ class Generic(object):
             with open(history_file_name, 'a') as history:
                 history.write(self._get_history_line(command_script))
 
+    def _script_from_history(self, line):
+        """Returns prepared history line.
+
+        Should return a blank line if history line is corrupted or empty.
+
+        """
+        return ''
+
+    def get_history(self):
+        """Returns list of history entries."""
+        history_file_name = self._get_history_file_name()
+        if os.path.isfile(history_file_name):
+            with io.open(history_file_name, 'r',
+                         encoding='utf-8', errors='ignore') as history:
+                for line in history:
+                    prepared = self._script_from_history(line)\
+                                   .strip()
+                    if prepared:
+                        yield prepared
+
     def and_(self, *commands):
         return u' && '.join(commands)
 
 
 class Bash(Generic):
-    def app_alias(self):
-        return "\nalias fuck='eval $(thefuck $(fc -ln -1)); history -r'\n"
+    def app_alias(self, fuck):
+        return "TF_ALIAS={0} alias {0}='eval $(thefuck $(fc -ln -1));" \
+               " history -r'".format(fuck)
 
     def _parse_alias(self, alias):
         name, value = alias.replace('alias ', '', 1).split('=', 1)
@@ -62,7 +84,6 @@ class Bash(Generic):
             value = value[1:-1]
         return name, value
 
-    @memoize
     def get_aliases(self):
         proc = Popen('bash -ic alias', stdout=PIPE, stderr=DEVNULL,
                      shell=True)
@@ -78,10 +99,22 @@ class Bash(Generic):
     def _get_history_line(self, command_script):
         return u'{}\n'.format(command_script)
 
+    def _script_from_history(self, line):
+        return line
+
 
 class Fish(Generic):
-    def app_alias(self):
-        return ("function fuck -d 'Correct your previous console command'\n"
+
+    def _get_overridden_aliases(self):
+        overridden_aliases = os.environ.get('TF_OVERRIDDEN_ALIASES', '').strip()
+        if overridden_aliases:
+            return [alias.strip() for alias in overridden_aliases.split(',')]
+        else:
+            return ['cd', 'grep', 'ls', 'man', 'open']
+
+    def app_alias(self, fuck):
+        return ("set TF_ALIAS {0}\n"
+                "function {0} -d 'Correct your previous console command'\n"
                 "    set -l exit_code $status\n"
                 "    set -l eval_script"
                 " (mktemp 2>/dev/null ; or mktemp -t 'thefuck')\n"
@@ -92,14 +125,14 @@ class Fish(Generic):
                 "    if test $exit_code -ne 0\n"
                 "        history --delete $fucked_up_commandd\n"
                 "    end\n"
-                "end")
+                "end").format(fuck)
 
-    @memoize
     def get_aliases(self):
+        overridden = self._get_overridden_aliases()
         proc = Popen('fish -ic functions', stdout=PIPE, stderr=DEVNULL,
                      shell=True)
         functions = proc.stdout.read().decode('utf-8').strip().split('\n')
-        return {function: function for function in functions}
+        return {func: func for func in functions if func not in overridden}
 
     def _expand_aliases(self, command_script):
         aliases = self.get_aliases()
@@ -124,8 +157,10 @@ class Fish(Generic):
 
 
 class Zsh(Generic):
-    def app_alias(self):
-        return "\nalias fuck='eval $(thefuck $(fc -ln -1 | tail -n 1)); fc -R'\n"
+    def app_alias(self, fuck):
+        return "TF_ALIAS={0}" \
+               " alias {0}='eval $(thefuck $(fc -ln -1 | tail -n 1));" \
+               " fc -R'".format(fuck)
 
     def _parse_alias(self, alias):
         name, value = alias.split('=', 1)
@@ -133,7 +168,6 @@ class Zsh(Generic):
             value = value[1:-1]
         return name, value
 
-    @memoize
     def get_aliases(self):
         proc = Popen('zsh -ic alias', stdout=PIPE, stderr=DEVNULL,
                      shell=True)
@@ -149,16 +183,23 @@ class Zsh(Generic):
     def _get_history_line(self, command_script):
         return u': {}:0;{}\n'.format(int(time()), command_script)
 
+    def _script_from_history(self, line):
+        if ';' in line:
+            return line.split(';', 1)[1]
+        else:
+            return ''
+
 
 class Tcsh(Generic):
-    def app_alias(self):
-        return "\nalias fuck 'set fucked_cmd=`history -h 2 | head -n 1` && eval `thefuck ${fucked_cmd}`'\n"
+    def app_alias(self, fuck):
+        return ("alias {0} 'setenv TF_ALIAS {0} && "
+                "set fucked_cmd=`history -h 2 | head -n 1` && "
+                "eval `thefuck ${{fucked_cmd}}`'").format(fuck)
 
     def _parse_alias(self, alias):
         name, value = alias.split("\t", 1)
         return name, value
 
-    @memoize
     def get_aliases(self):
         proc = Popen('tcsh -ic alias', stdout=PIPE, stderr=DEVNULL,
                      shell=True)
@@ -199,8 +240,12 @@ def to_shell(command):
     return _get_shell().to_shell(command)
 
 
-def app_alias():
-    print(_get_shell().app_alias())
+def app_alias(alias):
+    return _get_shell().app_alias(alias)
+
+
+def thefuck_alias():
+    return os.environ.get('TF_ALIAS', 'fuck')
 
 
 def put_to_history(command):
@@ -211,5 +256,11 @@ def and_(*commands):
     return _get_shell().and_(*commands)
 
 
+@memoize
 def get_aliases():
     return list(_get_shell().get_aliases().keys())
+
+
+@memoize
+def get_history():
+    return list(_get_shell().get_history())

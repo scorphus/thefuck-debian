@@ -12,6 +12,11 @@ def did_not_match(target, did_you_forget=False):
     return error
 
 
+@pytest.fixture
+def get_branches(mocker):
+    return mocker.patch('thefuck.rules.git_checkout.get_branches')
+
+
 @pytest.mark.parametrize('command', [
     Command(script='git checkout unknown', stderr=did_not_match('unknown')),
     Command(script='git commit unknown', stderr=did_not_match('unknown'))])
@@ -28,10 +33,21 @@ def test_not_match(command):
     assert not match(command, None)
 
 
-@pytest.mark.parametrize('command, new_command', [
-    (Command(script='git checkout unknown', stderr=did_not_match('unknown')),
+@pytest.mark.parametrize('branches, command, new_command', [
+    ([],
+     Command(script='git checkout unknown', stderr=did_not_match('unknown')),
      'git branch unknown && git checkout unknown'),
-    (Command('git commit unknown', stderr=did_not_match('unknown')),
-     'git branch unknown && git commit unknown')])
-def test_get_new_command(command, new_command):
+    ([],
+     Command('git commit unknown', stderr=did_not_match('unknown')),
+     'git branch unknown && git commit unknown'),
+    (['test-random-branch-123'],
+     Command(script='git checkout tst-rdm-brnch-123',
+             stderr=did_not_match('tst-rdm-brnch-123')),
+     'git checkout test-random-branch-123'),
+    (['test-random-branch-123'],
+     Command(script='git commit tst-rdm-brnch-123',
+             stderr=did_not_match('tst-rdm-brnch-123')),
+     'git commit test-random-branch-123')])
+def test_get_new_command(branches, command, new_command, get_branches):
+    get_branches.return_value = branches
     assert get_new_command(command, None) == new_command

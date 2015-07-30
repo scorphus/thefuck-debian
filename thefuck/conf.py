@@ -27,15 +27,18 @@ DEFAULT_PRIORITY = 1000
 
 DEFAULT_SETTINGS = {'rules': DEFAULT_RULES,
                     'wait_command': 3,
-                    'require_confirmation': False,
+                    'require_confirmation': True,
                     'no_colors': False,
-                    'priority': {}}
+                    'debug': False,
+                    'priority': {},
+                    'env': {'LC_ALL': 'C', 'LANG': 'C', 'GIT_TRACE': '1'}}
 
 ENV_TO_ATTR = {'THEFUCK_RULES': 'rules',
                'THEFUCK_WAIT_COMMAND': 'wait_command',
                'THEFUCK_REQUIRE_CONFIRMATION': 'require_confirmation',
                'THEFUCK_NO_COLORS': 'no_colors',
-               'THEFUCK_PRIORITY': 'priority'}
+               'THEFUCK_PRIORITY': 'priority',
+               'THEFUCK_DEBUG': 'debug'}
 
 
 SETTINGS_HEADER = u"""# ~/.thefuck/settings.py: The Fuck settings file
@@ -87,7 +90,7 @@ def _val_from_env(env, attr):
         return dict(_priority_from_env(val))
     elif attr == 'wait_command':
         return int(val)
-    elif attr in ('require_confirmation', 'no_colors'):
+    elif attr in ('require_confirmation', 'no_colors', 'debug'):
         return val.lower() == 'true'
     else:
         return val

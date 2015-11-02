@@ -10,7 +10,7 @@ usage: git stash list [<options>]
    or: git stash ( pop | apply ) [--index] [-q|--quiet] [<stash>]
    or: git stash branch <branchname> [<stash>]
    or: git stash [save [--patch] [-k|--[no-]keep-index] [-q|--quiet]
-		       [-u|--include-untracked] [-a|--all] [<message>]]
+\t\t       [-u|--include-untracked] [-a|--all] [<message>]]
    or: git stash clear
 '''
 
@@ -20,7 +20,11 @@ usage: git stash list [<options>]
     'git stash Some message',
     'git stash saev Some message'])
 def test_match(wrong):
-    assert match(Command(wrong, stderr=git_stash_err), None)
+    assert match(Command(wrong, stderr=git_stash_err))
+
+
+def test_not_match():
+    assert not match(Command("git", stderr=git_stash_err))
 
 
 @pytest.mark.parametrize('wrong,fixed', [
@@ -28,4 +32,4 @@ def test_match(wrong):
     ('git stash Some message', 'git stash save Some message'),
     ('git stash saev Some message', 'git stash save Some message')])
 def test_get_new_command(wrong, fixed):
-    assert get_new_command(Command(wrong, stderr=git_stash_err), None) == fixed
+    assert get_new_command(Command(wrong, stderr=git_stash_err)) == fixed

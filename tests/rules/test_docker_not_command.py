@@ -110,20 +110,20 @@ def stderr(cmd):
 
 
 def test_match():
-    assert match(Command('docker pes', stderr=stderr('pes')), None)
+    assert match(Command('docker pes', stderr=stderr('pes')))
 
 
 @pytest.mark.parametrize('script, stderr', [
     ('docker ps', ''),
     ('cat pes', stderr('pes'))])
 def test_not_match(script, stderr):
-    assert not match(Command(script, stderr=stderr), None)
+    assert not match(Command(script, stderr=stderr))
 
 
 @pytest.mark.usefixtures('docker_help')
 @pytest.mark.parametrize('wrong, fixed', [
-    ('pes', 'ps'),
-    ('tags', 'tag')])
+    ('pes', ['ps', 'push', 'pause']),
+    ('tags', ['tag', 'stats', 'images'])])
 def test_get_new_command(wrong, fixed):
     command = Command('docker {}'.format(wrong), stderr=stderr(wrong))
-    assert get_new_command(command, None) == 'docker {}'.format(fixed)
+    assert get_new_command(command) == ['docker {}'.format(x) for x in fixed]

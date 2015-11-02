@@ -1,11 +1,11 @@
 import re
 import subprocess
-from thefuck.utils import get_closest, replace_argument
+from thefuck.utils import replace_command, for_app
 
 
-def match(command, script):
-    return command.script.startswith('gulp')\
-        and 'is not in your gulpfile' in command.stdout
+@for_app('gulp')
+def match(command):
+    return 'is not in your gulpfile' in command.stdout
 
 
 def get_gulp_tasks():
@@ -15,8 +15,7 @@ def get_gulp_tasks():
             for line in proc.stdout.readlines()]
 
 
-def get_new_command(command, script):
+def get_new_command(command):
     wrong_task = re.findall(r"Task '(\w+)' is not in your gulpfile",
                             command.stdout)[0]
-    fixed_task = get_closest(wrong_task, get_gulp_tasks())
-    return replace_argument(command.script, wrong_task, fixed_task)
+    return replace_command(command, wrong_task, get_gulp_tasks())

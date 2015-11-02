@@ -1,10 +1,10 @@
 import re
-from thefuck.utils import get_closest, replace_argument
+from thefuck.utils import replace_command, for_app
 
 
-def match(command, settings):
-    return command.script.startswith('heroku') and \
-           'is not a heroku command' in command.stderr and \
+@for_app('heroku')
+def match(command):
+    return 'is not a heroku command' in command.stderr and \
            'Perhaps you meant' in command.stderr
 
 
@@ -14,7 +14,6 @@ def _get_suggests(stderr):
             return re.findall(r'`([^`]+)`', line)
 
 
-def get_new_command(command, settings):
+def get_new_command(command):
     wrong = re.findall(r'`(\w+)` is not a heroku command', command.stderr)[0]
-    correct = get_closest(wrong, _get_suggests(command.stderr))
-    return replace_argument(command.script, wrong, correct)
+    return replace_command(command, wrong, _get_suggests(command.stderr))

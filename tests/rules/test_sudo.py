@@ -14,12 +14,16 @@ from tests.utils import Command
     ('You don\'t have access to the history DB.', ''),
     ('', "error: [Errno 13] Permission denied: '/usr/local/lib/python2.7/dist-packages/ipaddr.py'")])
 def test_match(stderr, stdout):
-    assert match(Command(stderr=stderr, stdout=stdout), None)
+    assert match(Command(stderr=stderr, stdout=stdout))
 
 
 def test_not_match():
-    assert not match(Command(), None)
+    assert not match(Command())
 
 
-def test_get_new_command():
-    assert get_new_command(Command('ls'), None) == 'sudo ls'
+@pytest.mark.parametrize('before, after', [
+    ('ls', 'sudo ls'),
+    ('echo a > b', 'sudo sh -c "echo a > b"'),
+    ('echo "a" >> b', 'sudo sh -c "echo \\"a\\" >> b"')])
+def test_get_new_command(before, after):
+    assert get_new_command(Command(before)) == after

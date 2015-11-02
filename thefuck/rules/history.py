@@ -23,12 +23,13 @@ def _history_of_exists_without_current(command):
             if not line.startswith(tf_alias) and not line == command.script
             and line.split(' ')[0] in executables]
 
-def match(command, settings):
+
+def match(command):
     return len(get_close_matches(command.script,
                                  _history_of_exists_without_current(command)))
 
 
-def get_new_command(command, settings):
+def get_new_command(command):
     return get_closest(command.script,
                        _history_of_exists_without_current(command))
 

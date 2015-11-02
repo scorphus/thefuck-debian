@@ -20,9 +20,9 @@ elif (3, 0) < version < (3, 3):
           ' ({}.{} detected).'.format(*version))
     sys.exit(-1)
 
-VERSION = '2.5.6'
+VERSION = '3.1'
 
-install_requires = ['psutil', 'colorama', 'six']
+install_requires = ['psutil', 'colorama', 'six', 'decorator']
 extras_require = {':python_version<"3.4"': ['pathlib']}
 
 setup(name='thefuck',
@@ -41,4 +41,5 @@ setup(name='thefuck',
       extras_require=extras_require,
       entry_points={'console_scripts': [
           'thefuck = thefuck.main:main',
-          'thefuck-alias = thefuck.main:print_alias']})
+          'thefuck-alias = thefuck.main:print_alias',
+          'fuck = thefuck.main:how_to_configure_alias']})

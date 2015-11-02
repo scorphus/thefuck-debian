@@ -4,10 +4,11 @@
 
 --- thefuck.orig/setup.py
 +++ thefuck/setup.py
-@@ -40,5 +40,5 @@ setup(name='thefuck',
+@@ -40,6 +40,6 @@ setup(name='thefuck',
        install_requires=install_requires,
        extras_require=extras_require,
        entry_points={'console_scripts': [
 -          'thefuck = thefuck.main:main',
 +          'thefuck.real = thefuck.main:main',
-           'thefuck-alias = thefuck.main:print_alias']})
+           'thefuck-alias = thefuck.main:print_alias',
+           'fuck = thefuck.main:how_to_configure_alias']})

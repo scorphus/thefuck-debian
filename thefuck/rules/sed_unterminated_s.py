@@ -1,13 +1,13 @@
 import shlex
-from thefuck.utils import quote
+from thefuck.utils import quote, for_app
 
 
-def match(command, settings):
-    return ('sed' in command.script
-            and "unterminated `s' command" in command.stderr)
+@for_app('sed')
+def match(command):
+    return "unterminated `s' command" in command.stderr
 
 
-def get_new_command(command, settings):
+def get_new_command(command):
     script = shlex.split(command.script)
 
     for (i, e) in enumerate(script):

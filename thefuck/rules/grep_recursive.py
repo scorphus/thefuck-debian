@@ -1,7 +1,10 @@
-def match(command, settings):
-    return (command.script.startswith('grep')
-            and 'is a directory' in command.stderr.lower())
+from thefuck.utils import for_app
 
 
-def get_new_command(command, settings):
+@for_app('grep')
+def match(command):
+    return 'is a directory' in command.stderr.lower()
+
+
+def get_new_command(command):
     return 'grep -r {}'.format(command.script[5:])

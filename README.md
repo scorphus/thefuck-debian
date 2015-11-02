@@ -1,4 +1,4 @@
-# The Fuck [![Build Status](https://travis-ci.org/nvbn/thefuck.svg)](https://travis-ci.org/nvbn/thefuck) 
+# The Fuck [![Build Status](https://travis-ci.org/nvbn/thefuck.svg?branch=master)](https://travis-ci.org/nvbn/thefuck) 
 
 Magnificent app which corrects your previous console command,
 inspired by a [@liamosaur](https://twitter.com/liamosaur/)
@@ -14,7 +14,7 @@ E: Could not open lock file /var/lib/dpkg/lock - open (13: Permission denied)
 E: Unable to lock the administration directory (/var/lib/dpkg/), are you root?
 
 ➜ fuck
-sudo apt-get install vim [enter/ctrl+c]
+sudo apt-get install vim [enter/↑/↓/ctrl+c]
 [sudo] password for nvbn:
 Reading package lists... Done
 ...
@@ -29,7 +29,7 @@ To push the current branch and set the remote as upstream, use
 
 
 ➜ fuck
-git push --set-upstream origin master [enter/ctrl+c]
+git push --set-upstream origin master [enter/↑/↓/ctrl+c]
 Counting objects: 9, done.
 ...
 ```
@@ -42,7 +42,7 @@ No command 'puthon' found, did you mean:
 zsh: command not found: puthon
 
 ➜ fuck
-python [enter/ctrl+c]
+python [enter/↑/↓/ctrl+c]
 Python 3.4.2 (default, Oct  8 2014, 13:08:17)
 ...
 ```
@@ -55,7 +55,7 @@ Did you mean this?
 	branch
 
 ➜ fuck
-git branch [enter/ctrl+c]
+git branch [enter/↑/↓/ctrl+c]
 * master
 ```
 
@@ -67,7 +67,7 @@ Did you mean this?
          repl
 
 ➜ fuck
-lein repl [enter/ctrl+c]
+lein repl [enter/↑/↓/ctrl+c]
 nREPL server started on port 54848 on host 127.0.0.1 - nrepl://127.0.0.1:54848
 REPL-y 0.3.1
 ...
@@ -94,7 +94,15 @@ Reading package lists... Done
 - pip
 - python-dev
 
-## Installation
+## Installation [*experimental*]
+
+On Ubuntu and OS X you can install `The Fuck` with installation script:
+ 
+```bash
+wget -O - https://raw.githubusercontent.com/nvbn/thefuck/master/install.sh | sh - && $0
+```
+
+## Manual installation
 
 Install `The Fuck` with `pip`:
 
@@ -107,9 +115,9 @@ sudo pip install thefuck
 You should place this command in your `.bash_profile`, `.bashrc`, `.zshrc` or other startup script:
 
 ```bash
-eval "$(thefuck-alias)"
+eval "$(thefuck --alias)"
 # You can use whatever you want as an alias, like for Mondays:
-eval "$(thefuck-alias FUCK)"
+eval "$(thefuck --alias FUCK)"
 ```
 
 [Or in your shell config (Bash, Zsh, Fish, Powershell, tcsh).](https://github.com/nvbn/thefuck/wiki/Shell-aliases)
@@ -146,6 +154,7 @@ using the matched rule and runs it. Rules enabled by default are as follows:
 * `docker_not_command` &ndash; fixes wrong docker commands like `docker tags`;
 * `dry` &ndash; fixes repetitions like `git git push`;
 * `fix_alt_space` &ndash; replaces Alt+Space with Space character;
+* `fix_file` &ndash; opens a file with an error in your `$EDITOR`;
 * `git_add` &ndash; fixes *"Did you forget to 'git add'?"*;
 * `git_branch_delete` &ndash; changes `git branch -d` to `git branch -D`;
 * `git_branch_list` &ndash; catches `git branch list` in place of `git branch` and removes created branch;
@@ -160,9 +169,9 @@ using the matched rule and runs it. Rules enabled by default are as follows:
 * `git_stash` &ndash; stashes you local modifications before rebasing or switching branch;
 * `go_run` &ndash; appends `.go` extension when compiling/running Go programs
 * `grep_recursive` &ndash; adds `-r` when you trying to `grep` directory;
-* `gulp_not_task` &ndash; fixes misspelled gulp tasks;
+* `gulp_not_task` &ndash; fixes misspelled `gulp` tasks;
 * `has_exists_script` &ndash; prepends `./` when script/binary exists;
-* `heroku_no_command` &ndash; fixes wrong `heroku` commands like `heroku log`;
+* `heroku_not_command` &ndash; fixes wrong `heroku` commands like `heroku log`;
 * `history` &ndash; tries to replace command with most similar command from history;
 * `java` &ndash; removes `.java` extension when running Java programs;
 * `javac` &ndash; appends missing `.java` when compiling Java files;
@@ -172,32 +181,40 @@ using the matched rule and runs it. Rules enabled by default are as follows:
 * `man_no_space` &ndash; fixes man commands without spaces, for example `mandiff`;
 * `mercurial` &ndash; fixes wrong `hg` commands;
 * `mkdir_p` &ndash; adds `-p` when you trying to create directory without parent;
+* `mvn_no_command` &ndash; adds `clean package` to `mvn`;
+* `mvn_unknown_lifecycle_phase` &ndash; fixes misspelled lifecycle phases with `mvn`;
 * `no_command` &ndash; fixes wrong console commands, for example `vom/vim`;
 * `no_such_file` &ndash; creates missing directories with `mv` and `cp` commands;
 * `open` &ndash; prepends `http` to address passed to `open`;
 * `pip_unknown_command` &ndash; fixes wrong `pip` commands, for example `pip instatl/pip install`;
 * `python_command` &ndash; prepends `python` when you trying to run not executable/without `./` python script;
 * `python_execute` &ndash; appends missing `.py` when executing Python files;
-* `quotation_marks` &ndash; fixes uneven usage of `'` and `"` when containing args'
+* `quotation_marks` &ndash; fixes uneven usage of `'` and `"` when containing args';
 * `rm_dir` &ndash; adds `-rf` when you trying to remove directory;
 * `sed_unterminated_s` &ndash; adds missing '/' to `sed`'s `s` commands;
 * `sl_ls` &ndash; changes `sl` to `ls`;
 * `ssh_known_hosts` &ndash; removes host from `known_hosts` on warning;
 * `sudo` &ndash; prepends `sudo` to previous command if it failed because of permissions;
-* `switch_layout` &ndash; switches command from your local layout to en;
+* `switch_lang` &ndash; switches command from your local layout to en;
 * `systemctl` &ndash; correctly orders parameters of confusing `systemctl`;
 * `test.py` &ndash; runs `py.test` instead of `test.py`;
+* `touch` &ndash; creates missing directories before "touching";
 * `tsuru_login` &ndash; runs `tsuru login` if not authenticated or session expired;
+* `tsuru_not_command` &ndash; fixes wrong `tsuru` commands like `tsuru shell`;
 * `tmux` &ndash; fixes `tmux` commands;
+* `unknown_command` &ndash; fixes hadoop hdfs-style "unknown command", for example adds missing '-' to the command on `hdfs dfs ls`;
+* `vagrant_up` &ndash; starts up the vagrant instance;
 * `whois` &ndash; fixes `whois` command.
 
 Enabled by default only on specific platforms:
 
-* `apt_get` &ndash; installs app from apt if it not installed;
+* `apt_get` &ndash; installs app from apt if it not installed (requires `python-commandnotfound` / `python3-commandnotfound`);
+* `apt_get_search` &ndash; changes trying to search using `apt-get` with searching using `apt-cache`;
 * `brew_install` &ndash; fixes formula name for `brew install`;
 * `brew_unknown_command` &ndash; fixes wrong brew commands, for example `brew docto/brew doctor`;
 * `brew_upgrade` &ndash; appends `--all` to `brew upgrade` as per Homebrew's new behaviour;
-* `pacman` &ndash; installs app with `pacman` or `yaourt` if it is not installed.
+* `pacman` &ndash; installs app with `pacman` if it is not installed (uses `yaourt` if available);
+* `pacman_not_found` &ndash; fixes package name with `pacman` or `yaourt`.
 
 Bundled, but not enabled by default:
 
@@ -210,32 +227,37 @@ For adding your own rule you should create `your-rule-name.py`
 in `~/.thefuck/rules`. The rule should contain two functions:
 
 ```python
-match(command: Command, settings: Settings) -> bool
-get_new_command(command: Command, settings: Settings) -> str
+match(command: Command) -> bool
+get_new_command(command: Command) -> str | list[str]
 ```
 
-Also the rule can contain an optional function `side_effect(command: Command, settings: Settings) -> None`
+Also the rule can contain an optional function
+
+```python
+side_effect(old_command: Command, fixed_command: str) -> None
+```
 and optional `enabled_by_default`, `requires_output` and `priority` variables.
 
 `Command` has three attributes: `script`, `stdout` and `stderr`.
 
-`Settings` is a special object filled with `~/.thefuck/settings.py` and values from env ([see more below](#settings)).
+*Rules api changed in 3.0:* For accessing settings in rule you need to import it with `from thefuck.conf import settings`.
+`settings` is a special object filled with `~/.thefuck/settings.py` and values from env ([see more below](#settings)).
 
 Simple example of the rule for running script with `sudo`:
 
 ```python
-def match(command, settings):
+def match(command):
     return ('permission denied' in command.stderr.lower()
             or 'EACCES' in command.stderr)
 
 
-def get_new_command(command, settings):
+def get_new_command(command):
     return 'sudo {}'.format(command.script)
 
 # Optional:
 enabled_by_default = True
 
-def side_effect(command, settings):
+def side_effect(command, fixed_command):
     subprocess.call('chmod 777 .', shell=True)
 
 priority = 1000  # Lower first, default is 1000
@@ -244,13 +266,15 @@ requires_output = True
 ```
 
 [More examples of rules](https://github.com/nvbn/thefuck/tree/master/thefuck/rules),
-[utility functions for rules](https://github.com/nvbn/thefuck/tree/master/thefuck/utils.py).
+[utility functions for rules](https://github.com/nvbn/thefuck/tree/master/thefuck/utils.py),
+[app/os-specific helpers](https://github.com/nvbn/thefuck/tree/master/thefuck/specific/).
 
 ## Settings
 
 The Fuck has a few settings parameters which can be changed in `~/.thefuck/settings.py`:
 
 * `rules` &ndash; list of enabled rules, by default `thefuck.conf.DEFAULT_RULES`;
+* `exclude_rules` &ndash; list of disabled rules, by default `[]`;
 * `require_confirmation` &ndash; requires confirmation before running new command, by default `True`;
 * `wait_command` &ndash; max amount of time in seconds for getting previous command output;
 * `no_colors` &ndash; disable colored output;
@@ -261,6 +285,7 @@ Example of `settings.py`:
 
 ```python
 rules = ['sudo', 'no_command']
+exclude_rules = ['git_push']
 require_confirmation = True
 wait_command = 10
 no_colors = False
@@ -271,6 +296,7 @@ debug = False
 Or via environment variables:
 
 * `THEFUCK_RULES` &ndash; list of enabled rules, like `DEFAULT_RULES:rm_root` or `sudo:no_command`;
+* `THEFUCK_EXCLUDE_RULES` &ndash; list of disabled rules, like `git_pull:git_push`; 
 * `THEFUCK_REQUIRE_CONFIRMATION` &ndash; require confirmation before running new command, `true/false`;
 * `THEFUCK_WAIT_COMMAND` &ndash; max amount of time in seconds for getting previous command output;
 * `THEFUCK_NO_COLORS` &ndash; disable colored output, `true/false`;
@@ -282,6 +308,7 @@ For example:
 
 ```bash
 export THEFUCK_RULES='sudo:no_command'
+export THEFUCK_EXCLUDE_RULES='git_pull:git_push'
 export THEFUCK_REQUIRE_CONFIRMATION='true'
 export THEFUCK_WAIT_COMMAND=10
 export THEFUCK_NO_COLORS='false'
@@ -306,7 +333,7 @@ py.test
 Run unit and functional tests (requires docker):
 
 ```bash
-FUNCTIONAL=true py.test
+py.test --enable-functional
 ```
 
 For sending package to pypi:

@@ -1,10 +1,12 @@
-def match(command, settings):
-    return (command.script == 'ls'
-            or command.script.startswith('ls ')
-            and not ('ls -' in command.script))
+from thefuck.utils import for_app
 
 
-def get_new_command(command, settings):
+@for_app('ls')
+def match(command):
+    return 'ls -' not in command.script
+
+
+def get_new_command(command):
     command = command.script.split(' ')
     command[0] = 'ls -lah'
     return ' '.join(command)

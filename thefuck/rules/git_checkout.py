@@ -2,10 +2,11 @@ import re
 import subprocess
 from thefuck import shells, utils
 from thefuck.utils import replace_argument
+from thefuck.specific.git import git_support
 
 
-@utils.git_support
-def match(command, settings):
+@git_support
+def match(command):
     return ('did not match any file(s) known to git.' in command.stderr
             and "Did you forget to 'git add'?" not in command.stderr)
 
@@ -23,11 +24,11 @@ def get_branches():
         yield line.strip()
 
 
-@utils.git_support
-def get_new_command(command, settings):
+@git_support
+def get_new_command(command):
     missing_file = re.findall(
         r"error: pathspec '([^']*)' "
-        "did not match any file\(s\) known to git.", command.stderr)[0]
+        r"did not match any file\(s\) known to git.", command.stderr)[0]
     closest_branch = utils.get_closest(missing_file, get_branches(),
                                        fallback_to_first=False)
     if closest_branch:

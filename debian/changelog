@@ -1,3 +1,16 @@
+thefuck (3.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Depends on python-decorator.
+  * Refresh patches:
+    - debian/patches/0001-clean_scripts_install.patch
+    - debian/patches/0003-xdg_config_dir.patch
+  * Drop debian/patches/0002-disable_sudo_correction.patch:
+    - The program asks for confirmatiom by default before fixing
+      the previous command.
+
+ -- Alessio Treglia <alessio@debian.org>  Mon, 02 Nov 2015 01:46:20 +0000
+
 thefuck (2.5.6-1) unstable; urgency=medium
 
   * New upstream release.

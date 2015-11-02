@@ -19,6 +19,7 @@ Depends:
  ${python:Depends},
  ${misc:Depends},
  python-colorama,
+ python-decorator,
  python-pathlib,
  python-psutil,
  python-six

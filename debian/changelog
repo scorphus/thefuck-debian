@@ -1,10 +1,10 @@
-thefuck (3.2-1) UNRELEASED; urgency=medium
+thefuck (3.2-1) unstable; urgency=medium
 
-  * Imported Upstream version 3.2
-  * Drop patch for XDG compliance
-  * Add patch to fix wrong handling of logic operator in thefuck/utils.py
+  * New upstream release.
+  * Drop patch for XDG compliance.
+  * Add patch to fix wrong handling of logic operator in thefuck/utils.py.
 
- -- Alessio Treglia <quadrispro@ubuntu.com>  Wed, 04 Nov 2015 23:12:58 +0000
+ -- Alessio Treglia <alessio@debian.org>  Wed, 04 Nov 2015 23:17:13 +0000
 
 thefuck (3.1-1) unstable; urgency=medium
 

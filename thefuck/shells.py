@@ -1,6 +1,6 @@
 """Module with shell specific actions, each shell class should
-implement `from_shell`, `to_shell`, `app_alias`, `put_to_history` and `get_aliases`
-methods.
+implement `from_shell`, `to_shell`, `app_alias`, `put_to_history` and
+`get_aliases` methods.
 
 """
 from collections import defaultdict
@@ -9,6 +9,8 @@ from subprocess import Popen, PIPE
 from time import time
 import io
 import os
+import shlex
+import six
 from .utils import DEVNULL, memoize, cache
 
 
@@ -75,6 +77,20 @@ class Generic(object):
     def how_to_configure(self):
         return
 
+    def split_command(self, command):
+        """Split the command using shell-like syntax."""
+        return shlex.split(command)
+
+    def quote(self, s):
+        """Return a shell-escaped version of the string s."""
+
+        if six.PY2:
+            from pipes import quote
+        else:
+            from shlex import quote
+
+        return quote(s)
+
 
 class Bash(Generic):
     def app_alias(self, fuck):
@@ -126,19 +142,20 @@ class Fish(Generic):
             return ['cd', 'grep', 'ls', 'man', 'open']
 
     def app_alias(self, fuck):
-        return ("set TF_ALIAS {0}\n"
-                "function {0} -d 'Correct your previous console command'\n"
-                "    set -l exit_code $status\n"
-                "    set -l eval_script"
-                " (mktemp 2>/dev/null ; or mktemp -t 'thefuck')\n"
-                "    set -l fucked_up_command $history[1]\n"
-                "    thefuck $fucked_up_command > $eval_script\n"
-                "    . $eval_script\n"
-                "    /bin/rm $eval_script\n"
-                "    if test $exit_code -ne 0\n"
-                "        history --delete $fucked_up_command\n"
-                "    end\n"
-                "end").format(fuck)
+        return ('function {0} -d "Correct your previous console command"\n'
+                '    set -l exit_code $status\n'
+                '    set -x TF_ALIAS {0}\n'
+                '    set -l fucked_up_command $history[1]\n'
+                '    thefuck $fucked_up_command | read -l unfucked_command\n'
+                '    if [ "$unfucked_command" != "" ]\n'
+                '        eval $unfucked_command\n'
+                '        if test $exit_code -ne 0\n'
+                '            history --delete $fucked_up_command\n'
+                '            history --merge ^ /dev/null\n'
+                '            return 0\n'
+                '        end\n'
+                '    end\n'
+                'end').format(fuck)
 
     @memoize
     def get_aliases(self):
@@ -284,9 +301,18 @@ def get_aliases():
     return list(_get_shell().get_aliases().keys())
 
 
+def split_command(command):
+    return _get_shell().split_command(command)
+
+
+def quote(s):
+    return _get_shell().quote(s)
+
+
 @memoize
 def get_history():
     return list(_get_shell().get_history())
+
 
 def how_to_configure():
     return _get_shell().how_to_configure()

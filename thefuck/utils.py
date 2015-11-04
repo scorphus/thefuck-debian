@@ -12,15 +12,9 @@ from inspect import getargspec
 
 from pathlib import Path
 import pkg_resources
-import six
 from .conf import settings
 
 DEVNULL = open(os.devnull, 'w')
-
-if six.PY2:
-    from pipes import quote
-else:
-    from shlex import quote
 
 
 def memoize(fn):
@@ -144,19 +138,23 @@ def replace_command(command, broken, matched):
 
 
 @memoize
-def is_app(command, *app_names):
+def is_app(command, *app_names, **kwargs):
     """Returns `True` if command is call to one of passed app names."""
-    for name in app_names:
-        if command.script == name \
-                or command.script.startswith(u'{} '.format(name)):
-            return True
+
+    at_least = kwargs.pop('at_least', 0)
+    if kwargs:
+        raise TypeError("got an unexpected keyword argument '{}'".format(kwargs.keys()))
+
+    if command.script_parts is not None and len(command.script_parts) > at_least:
+        return command.script_parts[0] in app_names
+
     return False
 
 
-def for_app(*app_names):
+def for_app(*app_names, **kwargs):
     """Specifies that matching script is for on of app names."""
     def _for_app(fn, command):
-        if is_app(command, *app_names):
+        if is_app(command, *app_names, **kwargs):
             return fn(command)
         else:
             return False
@@ -180,17 +178,32 @@ def cache(*depends_on):
         except OSError:
             return '0'
 
+    def _get_cache_path():
+        default_xdg_cache_dir = os.path.expanduser("~/.cache")
+        cache_dir = os.getenv("XDG_CACHE_HOME", default_xdg_cache_dir)
+        cache_path = Path(cache_dir).joinpath('thefuck').as_posix()
+
+        # Ensure the cache_path exists, Python 2 does not have the exist_ok
+        # parameter
+        try:
+            os.makedirs(cache_dir)
+        except OSError:
+            if not os.path.isdir(cache_dir):
+                raise
+
+        return cache_path
+
     @decorator
     def _cache(fn, *args, **kwargs):
         if cache.disabled:
             return fn(*args, **kwargs)
 
-        cache_path = settings.user_dir.joinpath('.thefuck-cache').as_posix()
         # A bit obscure, but simplest way to generate unique key for
         # functions and methods in python 2 and 3:
         key = '{}.{}'.format(fn.__module__, repr(fn).split('at')[0])
 
         etag = '.'.join(_get_mtime(name) for name in depends_on)
+        cache_path = _get_cache_path()
 
         with closing(shelve.open(cache_path)) as db:
             if db.get(key, {}).get('etag') == etag:

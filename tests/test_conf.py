@@ -1,7 +1,7 @@
 import pytest
 import six
 from mock import Mock
-from thefuck import conf
+from thefuck import const
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def environ(monkeypatch):
 def test_settings_defaults(load_source, settings):
     load_source.return_value = object()
     settings.init()
-    for key, val in conf.DEFAULT_SETTINGS.items():
+    for key, val in const.DEFAULT_SETTINGS.items():
         assert getattr(settings, key) == val
 
 
@@ -42,13 +42,13 @@ class TestSettingsFromFile(object):
         assert settings.exclude_rules == ['git']
 
     def test_from_file_with_DEFAULT(self, load_source, settings):
-        load_source.return_value = Mock(rules=conf.DEFAULT_RULES + ['test'],
+        load_source.return_value = Mock(rules=const.DEFAULT_RULES + ['test'],
                                         wait_command=10,
                                         exclude_rules=[],
                                         require_confirmation=True,
                                         no_colors=True)
         settings.init()
-        assert settings.rules == conf.DEFAULT_RULES + ['test']
+        assert settings.rules == const.DEFAULT_RULES + ['test']
 
 
 @pytest.mark.usefixture('load_source')
@@ -59,7 +59,9 @@ class TestSettingsFromEnv(object):
                         'THEFUCK_WAIT_COMMAND': '55',
                         'THEFUCK_REQUIRE_CONFIRMATION': 'true',
                         'THEFUCK_NO_COLORS': 'false',
-                        'THEFUCK_PRIORITY': 'bash=10:lisp=wrong:vim=15'})
+                        'THEFUCK_PRIORITY': 'bash=10:lisp=wrong:vim=15',
+                        'THEFUCK_WAIT_SLOW_COMMAND': '999',
+                        'THEFUCK_SLOW_COMMANDS': 'lein:react-native:./gradlew'})
         settings.init()
         assert settings.rules == ['bash', 'lisp']
         assert settings.exclude_rules == ['git', 'vim']
@@ -67,11 +69,13 @@ class TestSettingsFromEnv(object):
         assert settings.require_confirmation is True
         assert settings.no_colors is False
         assert settings.priority == {'bash': 10, 'vim': 15}
+        assert settings.wait_slow_command == 999
+        assert settings.slow_commands == ['lein', 'react-native', './gradlew']
 
     def test_from_env_with_DEFAULT(self, environ, settings):
         environ.update({'THEFUCK_RULES': 'DEFAULT_RULES:bash:lisp'})
         settings.init()
-        assert settings.rules == conf.DEFAULT_RULES + ['bash', 'lisp']
+        assert settings.rules == const.DEFAULT_RULES + ['bash', 'lisp']
 
 
 class TestInitializeSettingsFile(object):
@@ -93,7 +97,7 @@ class TestInitializeSettingsFile(object):
         settings_file_contents = settings_file.getvalue()
         assert settings_path_mock.is_file.call_count == 1
         assert settings_path_mock.open.call_count == 1
-        assert conf.SETTINGS_HEADER in settings_file_contents
-        for setting in conf.DEFAULT_SETTINGS.items():
+        assert const.SETTINGS_HEADER in settings_file_contents
+        for setting in const.DEFAULT_SETTINGS.items():
             assert '# {} = {}\n'.format(*setting) in settings_file_contents
         settings_file.close()

@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import pytest
+import warnings
 from mock import Mock
 import six
 from thefuck.utils import default_settings, \
     memoize, get_closest, get_all_executables, replace_argument, \
-    get_all_matched_commands, is_app, for_app, cache, compatibility_call
+    get_all_matched_commands, is_app, for_app, cache, compatibility_call, \
+    get_valid_history_without_current
 from tests.utils import Command
 
 
@@ -50,7 +54,7 @@ class TestGetClosest(object):
 
 @pytest.fixture
 def get_aliases(mocker):
-    mocker.patch('thefuck.shells.get_aliases',
+    mocker.patch('thefuck.shells.shell.get_aliases',
                  return_value=['vim', 'apt-get', 'fsck', 'fuck'])
 
 
@@ -162,10 +166,10 @@ class TestCache(object):
 
     @pytest.fixture
     def key(self):
-        if six.PY3:
-            return 'tests.test_utils.<function TestCache.fn.<locals>.fn '
-        else:
+        if six.PY2:
             return 'tests.test_utils.<function fn '
+        else:
+            return 'tests.test_utils.<function TestCache.fn.<locals>.fn '
 
     def test_with_blank_cache(self, shelve, fn, key):
         assert shelve == {}
@@ -198,7 +202,8 @@ class TestCompatibilityCall(object):
             assert settings == _settings
             return True
 
-        assert compatibility_call(match, Command())
+        with pytest.warns(UserWarning):
+            assert compatibility_call(match, Command())
 
     def test_get_new_command(self):
         def get_new_command(command):
@@ -213,7 +218,8 @@ class TestCompatibilityCall(object):
             assert settings == _settings
             return True
 
-        assert compatibility_call(get_new_command, Command())
+        with pytest.warns(UserWarning):
+            assert compatibility_call(get_new_command, Command())
 
     def test_side_effect(self):
         def side_effect(command, new_command):
@@ -228,4 +234,45 @@ class TestCompatibilityCall(object):
             assert settings == _settings
             return True
 
-        assert compatibility_call(side_effect, Command(), Command())
+        with pytest.warns(UserWarning):
+            assert compatibility_call(side_effect, Command(), Command())
+
+
+class TestGetValidHistoryWithoutCurrent(object):
+    @pytest.yield_fixture(autouse=True)
+    def fail_on_warning(self):
+        warnings.simplefilter('error')
+        yield
+        warnings.resetwarnings()
+
+    @pytest.fixture(autouse=True)
+    def history(self, mocker):
+        return mocker.patch('thefuck.shells.shell.get_history',
+                            return_value=['le cat', 'fuck', 'ls cat',
+                                          'diff x', 'nocommand x', u'café ô'])
+
+    @pytest.fixture(autouse=True)
+    def alias(self, mocker):
+        return mocker.patch('thefuck.utils.get_alias',
+                            return_value='fuck')
+
+    @pytest.fixture(autouse=True)
+    def bins(self, mocker, monkeypatch):
+        monkeypatch.setattr('thefuck.conf.os.environ', {'PATH': 'path'})
+        callables = list()
+        for name in ['diff', 'ls', 'café']:
+            bin_mock = mocker.Mock(name=name)
+            bin_mock.configure_mock(name=name, is_dir=lambda: False)
+            callables.append(bin_mock)
+        path_mock = mocker.Mock(iterdir=mocker.Mock(return_value=callables))
+        return mocker.patch('thefuck.utils.Path', return_value=path_mock)
+
+    @pytest.mark.parametrize('script, result', [
+        ('le cat', ['ls cat', 'diff x', u'café ô']),
+        ('diff x', ['ls cat', u'café ô']),
+        ('fuck', ['ls cat', 'diff x', u'café ô']),
+        (u'cafe ô', ['ls cat', 'diff x', u'café ô']),
+    ])
+    def test_get_valid_history_without_current(self, script, result):
+        command = Command(script=script)
+        assert get_valid_history_without_current(command) == result

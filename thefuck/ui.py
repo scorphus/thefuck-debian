@@ -3,51 +3,23 @@
 import sys
 from .conf import settings
 from .exceptions import NoRuleMatched
-from . import logs
-
-try:
-    from msvcrt import getch
-except ImportError:
-    def getch():
-        import tty
-        import termios
-
-        fd = sys.stdin.fileno()
-        old = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-            if ch == '\x03':  # For compatibility with msvcrt.getch
-                raise KeyboardInterrupt
-            return ch
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
-
-SELECT = 0
-ABORT = 1
-PREVIOUS = 2
-NEXT = 3
+from .system import get_key
+from . import logs, const
 
 
 def read_actions():
     """Yields actions for pressed keys."""
-    buffer = []
     while True:
-        try:
-            ch = getch()
-        except KeyboardInterrupt:  # Ctrl+C
-            yield ABORT
+        key = get_key()
 
-        if ch in ('\n', '\r'):  # Enter
-            yield SELECT
-
-        buffer.append(ch)
-        buffer = buffer[-3:]
-
-        if buffer == ['\x1b', '[', 'A'] or ch == 'k':  # ↑
-            yield PREVIOUS
-        elif buffer == ['\x1b', '[', 'B'] or ch == 'j':  # ↓
-            yield NEXT
+        if key in (const.KEY_UP, 'k'):
+            yield const.ACTION_PREVIOUS
+        elif key in (const.KEY_DOWN, 'j'):
+            yield const.ACTION_NEXT
+        elif key in (const.KEY_CTRL_C, 'q'):
+            yield const.ACTION_ABORT
+        elif key in ('\n', '\r'):
+            yield const.ACTION_SELECT
 
 
 class CommandSelector(object):
@@ -106,15 +78,15 @@ def select_command(corrected_commands):
     logs.confirm_text(selector.value)
 
     for action in read_actions():
-        if action == SELECT:
+        if action == const.ACTION_SELECT:
             sys.stderr.write('\n')
             return selector.value
-        elif action == ABORT:
+        elif action == const.ACTION_ABORT:
             logs.failed('\nAborted')
             return
-        elif action == PREVIOUS:
+        elif action == const.ACTION_PREVIOUS:
             selector.previous()
             logs.confirm_text(selector.value)
-        elif action == NEXT:
+        elif action == const.ACTION_NEXT:
             selector.next()
             logs.confirm_text(selector.value)

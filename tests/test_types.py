@@ -1,9 +1,15 @@
+# -*- coding: utf-8 -*-
+
+import os
 from subprocess import PIPE
 from mock import Mock
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 import pytest
 from tests.utils import CorrectedCommand, Rule, Command
-from thefuck import conf
+from thefuck import const
 from thefuck.exceptions import EmptyCommand
 
 
@@ -19,6 +25,12 @@ class TestCorrectedCommand(object):
         assert {CorrectedCommand('ls', None, 100),
                 CorrectedCommand('ls', None, 200)} == {CorrectedCommand('ls')}
 
+    def test_representable(self):
+        assert '{}'.format(CorrectedCommand('ls', None, 100)) == \
+               'CorrectedCommand(script=ls, side_effect=None, priority=100)'
+        assert u'{}'.format(CorrectedCommand(u'echo café', None, 100)) == \
+               u'CorrectedCommand(script=echo café, side_effect=None, priority=100)'
+
 
 class TestRule(object):
     def test_from_path(self, mocker):
@@ -31,19 +43,20 @@ class TestRule(object):
                               enabled_by_default=True,
                               priority=900,
                               requires_output=True))
-        assert Rule.from_path(Path('/rules/bash.py')) \
+        rule_path = os.path.join(os.sep, 'rules', 'bash.py')
+        assert Rule.from_path(Path(rule_path)) \
                == Rule('bash', match, get_new_command, priority=900)
-        load_source.assert_called_once_with('bash', '/rules/bash.py')
+        load_source.assert_called_once_with('bash', rule_path)
 
     @pytest.mark.parametrize('rules, exclude_rules, rule, is_enabled', [
-        (conf.DEFAULT_RULES, [], Rule('git', enabled_by_default=True), True),
-        (conf.DEFAULT_RULES, [], Rule('git', enabled_by_default=False), False),
+        (const.DEFAULT_RULES, [], Rule('git', enabled_by_default=True), True),
+        (const.DEFAULT_RULES, [], Rule('git', enabled_by_default=False), False),
         ([], [], Rule('git', enabled_by_default=False), False),
         ([], [], Rule('git', enabled_by_default=True), False),
-        (conf.DEFAULT_RULES + ['git'], [], Rule('git', enabled_by_default=False), True),
+        (const.DEFAULT_RULES + ['git'], [], Rule('git', enabled_by_default=False), True),
         (['git'], [], Rule('git', enabled_by_default=False), True),
-        (conf.DEFAULT_RULES, ['git'], Rule('git', enabled_by_default=True), False),
-        (conf.DEFAULT_RULES, ['git'], Rule('git', enabled_by_default=False), False),
+        (const.DEFAULT_RULES, ['git'], Rule('git', enabled_by_default=True), False),
+        (const.DEFAULT_RULES, ['git'], Rule('git', enabled_by_default=False), False),
         ([], ['git'], Rule('git', enabled_by_default=True), False),
         ([], ['git'], Rule('git', enabled_by_default=False), False)])
     def test_is_enabled(self, settings, rules, exclude_rules, rule, is_enabled):
@@ -95,11 +108,6 @@ class TestCommand(object):
         monkeypatch.setattr('thefuck.types.Command._wait_output',
                             staticmethod(lambda *_: True))
 
-    @pytest.fixture(autouse=True)
-    def generic_shell(self, monkeypatch):
-        monkeypatch.setattr('thefuck.shells.from_shell', lambda x: x)
-        monkeypatch.setattr('thefuck.shells.to_shell', lambda x: x)
-
     def test_from_script_calls(self, Popen, settings):
         settings.env = {}
         assert Command.from_raw_script(
@@ -107,6 +115,7 @@ class TestCommand(object):
             'apt-get search vim', 'stdout', 'stderr')
         Popen.assert_called_once_with('apt-get search vim',
                                       shell=True,
+                                      stdin=PIPE,
                                       stdout=PIPE,
                                       stderr=PIPE,
                                       env={})
@@ -122,4 +131,3 @@ class TestCommand(object):
         else:
             with pytest.raises(EmptyCommand):
                 Command.from_raw_script(script)
-

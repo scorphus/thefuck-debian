@@ -4,7 +4,7 @@
 
 --- thefuck.orig/setup.py
 +++ thefuck/setup.py
-@@ -40,6 +40,6 @@ setup(name='thefuck',
+@@ -50,6 +50,6 @@ setup(name='thefuck',
        install_requires=install_requires,
        extras_require=extras_require,
        entry_points={'console_scripts': [

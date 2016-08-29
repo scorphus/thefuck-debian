@@ -1,3 +1,13 @@
+thefuck (3.11-1) unstable; urgency=medium
+
+  * Imported Upstream version 3.11
+  * Dropped 1001-fix_memoize.patch, applied upstream
+  * Refresh patches.
+  * Move under Section utils. Closes: #820384
+  * Bump Standards
+
+ -- Alessio Treglia <alessio@debian.org>  Mon, 29 Aug 2016 14:03:01 +0100
+
 thefuck (3.2-1) unstable; urgency=medium
 
   * New upstream release.

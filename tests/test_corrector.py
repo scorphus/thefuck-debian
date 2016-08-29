@@ -1,6 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import pytest
-from pathlib import PosixPath
-from thefuck import corrector, conf
+try:
+    from pathlib import Path
+    pathlib_name = 'pathlib'
+except ImportError:
+    from pathlib2 import Path
+    pathlib_name = 'pathlib2'
+from thefuck import corrector, const
 from tests.utils import Rule, Command, CorrectedCommand
 from thefuck.corrector import get_corrected_commands, organize_commands
 
@@ -9,7 +16,7 @@ class TestGetRules(object):
     @pytest.fixture
     def glob(self, mocker):
         results = {}
-        mocker.patch('pathlib.Path.glob',
+        mocker.patch(pathlib_name + '.Path.glob',
                      new_callable=lambda: lambda *_: results.pop('value', []))
         return lambda value: results.update({'value': value})
 
@@ -22,13 +29,13 @@ class TestGetRules(object):
         assert {r.name for r in rules} == set(names)
 
     @pytest.mark.parametrize('paths, conf_rules, exclude_rules, loaded_rules', [
-        (['git.py', 'bash.py'], conf.DEFAULT_RULES, [], ['git', 'bash']),
+        (['git.py', 'bash.py'], const.DEFAULT_RULES, [], ['git', 'bash']),
         (['git.py', 'bash.py'], ['git'], [], ['git']),
-        (['git.py', 'bash.py'], conf.DEFAULT_RULES, ['git'], ['bash']),
+        (['git.py', 'bash.py'], const.DEFAULT_RULES, ['git'], ['bash']),
         (['git.py', 'bash.py'], ['git'], ['git'], [])])
     def test_get_rules(self, glob, settings, paths, conf_rules, exclude_rules,
                        loaded_rules):
-        glob([PosixPath(path) for path in paths])
+        glob([Path(path) for path in paths])
         settings.update(rules=conf_rules,
                         priority={},
                         exclude_rules=exclude_rules)
@@ -53,7 +60,9 @@ def test_organize_commands():
     """Ensures that the function removes duplicates and sorts commands."""
     commands = [CorrectedCommand('ls'), CorrectedCommand('ls -la', priority=9000),
                 CorrectedCommand('ls -lh', priority=100),
+                CorrectedCommand(u'echo café', priority=200),
                 CorrectedCommand('ls -lh', priority=9999)]
     assert list(organize_commands(iter(commands))) \
         == [CorrectedCommand('ls'), CorrectedCommand('ls -lh', priority=100),
+            CorrectedCommand(u'echo café', priority=200),
             CorrectedCommand('ls -la', priority=9000)]

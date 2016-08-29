@@ -4,8 +4,10 @@ import os
 import sys
 import six
 from psutil import Process, TimeoutExpired
-from . import logs, shells
-from .conf import settings, DEFAULT_PRIORITY, ALL_ENABLED
+from . import logs
+from .shells import shell
+from .conf import settings
+from .const import DEFAULT_PRIORITY, ALL_ENABLED
 from .exceptions import EmptyCommand
 from .utils import compatibility_call
 
@@ -29,9 +31,9 @@ class Command(object):
     def script_parts(self):
         if not hasattr(self, '_script_parts'):
             try:
-                self._script_parts = shells.split_command(self.script)
+                self._script_parts = shell.split_command(self.script)
             except Exception:
-                logs.debug("Can't split command script {} because:\n {}".format(
+                logs.debug(u"Can't split command script {} because:\n {}".format(
                     self, sys.exc_info()))
                 self._script_parts = None
         return self._script_parts
@@ -39,12 +41,12 @@ class Command(object):
     def __eq__(self, other):
         if isinstance(other, Command):
             return (self.script, self.stdout, self.stderr) \
-                == (other.script, other.stdout, other.stderr)
+                   == (other.script, other.stdout, other.stderr)
         else:
             return False
 
     def __repr__(self):
-        return 'Command(script={}, stdout={}, stderr={})'.format(
+        return u'Command(script={}, stdout={}, stderr={})'.format(
             self.script, self.stdout, self.stderr)
 
     def update(self, **kwargs):
@@ -59,7 +61,7 @@ class Command(object):
         return Command(**kwargs)
 
     @staticmethod
-    def _wait_output(popen):
+    def _wait_output(popen, is_slow):
         """Returns `True` if we can get output of the command in the
         `settings.wait_command` time.
 
@@ -71,7 +73,8 @@ class Command(object):
         """
         proc = Process(popen.pid)
         try:
-            proc.wait(settings.wait_command)
+            proc.wait(settings.wait_slow_command if is_slow
+                      else settings.wait_command)
             return True
         except TimeoutExpired:
             for child in proc.children(recursive=True):
@@ -93,7 +96,7 @@ class Command(object):
             script = ' '.join(raw_script)
 
         script = script.strip()
-        return shells.from_shell(script)
+        return shell.from_shell(script)
 
     @classmethod
     def from_raw_script(cls, raw_script):
@@ -111,9 +114,12 @@ class Command(object):
         env = dict(os.environ)
         env.update(settings.env)
 
-        with logs.debug_time(u'Call: {}; with env: {};'.format(script, env)):
-            result = Popen(script, shell=True, stdout=PIPE, stderr=PIPE, env=env)
-            if cls._wait_output(result):
+        is_slow = script.split(' ')[0] in settings.slow_commands
+        with logs.debug_time(u'Call: {}; with env: {}; is slow: '.format(
+                script, env, is_slow)):
+            result = Popen(script, shell=True, stdin=PIPE,
+                           stdout=PIPE, stderr=PIPE, env=env)
+            if cls._wait_output(result, is_slow):
                 stdout = result.stdout.read().decode('utf-8')
                 stderr = result.stderr.read().decode('utf-8')
 
@@ -166,9 +172,9 @@ class Rule(object):
         return 'Rule(name={}, match={}, get_new_command={}, ' \
                'enabled_by_default={}, side_effect={}, ' \
                'priority={}, requires_output)'.format(
-                    self.name, self.match, self.get_new_command,
-                    self.enabled_by_default, self.side_effect,
-                    self.priority, self.requires_output)
+            self.name, self.match, self.get_new_command,
+            self.enabled_by_default, self.side_effect,
+            self.priority, self.requires_output)
 
     @classmethod
     def from_path(cls, path):
@@ -267,9 +273,9 @@ class CorrectedCommand(object):
         return (self.script, self.side_effect).__hash__()
 
     def __repr__(self):
-        return 'CorrectedCommand(script={}, side_effect={}, priority={})'.format(
+        return u'CorrectedCommand(script={}, side_effect={}, priority={})'.format(
             self.script, self.side_effect, self.priority)
-    
+
     def run(self, old_cmd):
         """Runs command from rule for passed command.
 
@@ -278,5 +284,9 @@ class CorrectedCommand(object):
         """
         if self.side_effect:
             compatibility_call(self.side_effect, old_cmd, self.script)
-        shells.put_to_history(self.script)
+        if settings.alter_history:
+            shell.put_to_history(self.script)
+        # This depends on correct setting of PYTHONIOENCODING by the alias:
+        logs.debug(u'PYTHONIOENCODING: {}'.format(
+            os.environ.get('PYTHONIOENCODING', '!!not-set!!')))
         print(self.script)

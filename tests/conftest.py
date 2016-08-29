@@ -1,6 +1,12 @@
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 import pytest
-from thefuck import conf
+from thefuck import shells
+from thefuck import conf, const
+
+shells.shell = shells.Generic()
 
 
 def pytest_addoption(parser):
@@ -19,7 +25,7 @@ def no_memoize(monkeypatch):
 def settings(request):
     def _reset_settings():
         conf.settings.clear()
-        conf.settings.update(conf.DEFAULT_SETTINGS)
+        conf.settings.update(const.DEFAULT_SETTINGS)
 
     request.addfinalizer(_reset_settings)
     conf.settings.user_dir = Path('~/.thefuck')
@@ -46,3 +52,14 @@ def functional(request):
 @pytest.fixture
 def source_root():
     return Path(__file__).parent.parent.resolve()
+
+
+@pytest.fixture
+def set_shell(monkeypatch, request):
+    def _set(cls):
+        shell = cls()
+        monkeypatch.setattr('thefuck.shells.shell', shell)
+        request.addfinalizer()
+        return shell
+
+    return _set

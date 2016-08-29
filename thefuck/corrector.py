@@ -1,4 +1,7 @@
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 from .conf import settings
 from .types import Rule
 from . import logs
@@ -55,7 +58,7 @@ def organize_commands(corrected_commands):
         key=lambda corrected_command: corrected_command.priority)
 
     logs.debug('Corrected commands: '.format(
-        ', '.join(str(cmd) for cmd in [first_command] + sorted_commands)))
+        ', '.join(u'{}'.format(cmd) for cmd in [first_command] + sorted_commands)))
 
     for command in sorted_commands:
         yield command

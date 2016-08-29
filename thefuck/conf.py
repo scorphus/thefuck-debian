@@ -1,42 +1,12 @@
 from imp import load_source
 import os
 import sys
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 from six import text_type
-
-
-ALL_ENABLED = object()
-DEFAULT_RULES = [ALL_ENABLED]
-DEFAULT_PRIORITY = 1000
-
-DEFAULT_SETTINGS = {'rules': DEFAULT_RULES,
-                    'exclude_rules': [],
-                    'wait_command': 3,
-                    'require_confirmation': True,
-                    'no_colors': False,
-                    'debug': False,
-                    'priority': {},
-                    'env': {'LC_ALL': 'C', 'LANG': 'C', 'GIT_TRACE': '1'}}
-
-ENV_TO_ATTR = {'THEFUCK_RULES': 'rules',
-               'THEFUCK_EXCLUDE_RULES': 'exclude_rules',
-               'THEFUCK_WAIT_COMMAND': 'wait_command',
-               'THEFUCK_REQUIRE_CONFIRMATION': 'require_confirmation',
-               'THEFUCK_NO_COLORS': 'no_colors',
-               'THEFUCK_PRIORITY': 'priority',
-               'THEFUCK_DEBUG': 'debug'}
-
-SETTINGS_HEADER = u"""# The Fuck settings file
-#
-# The rules are defined as in the example bellow:
-#
-# rules = ['cd_parent', 'git_push', 'python_command', 'sudo']
-#
-# The default values are as follows. Uncomment and change to fit your needs.
-# See https://github.com/nvbn/thefuck#settings for more information.
-#
-
-"""
+from . import const
 
 
 class Settings(dict):
@@ -67,8 +37,8 @@ class Settings(dict):
         settings_path = self.user_dir.joinpath('settings.py')
         if not settings_path.is_file():
             with settings_path.open(mode='w') as settings_file:
-                settings_file.write(SETTINGS_HEADER)
-                for setting in DEFAULT_SETTINGS.items():
+                settings_file.write(const.SETTINGS_HEADER)
+                for setting in const.DEFAULT_SETTINGS.items():
                     settings_file.write(u'# {} = {}\n'.format(*setting))
 
     def _get_user_dir_path(self):
@@ -96,14 +66,14 @@ class Settings(dict):
         settings = load_source(
             'settings', text_type(self.user_dir.joinpath('settings.py')))
         return {key: getattr(settings, key)
-                for key in DEFAULT_SETTINGS.keys()
+                for key in const.DEFAULT_SETTINGS.keys()
                 if hasattr(settings, key)}
 
     def _rules_from_env(self, val):
         """Transforms rules list from env-string to python."""
         val = val.split(':')
         if 'DEFAULT_RULES' in val:
-            val = DEFAULT_RULES + [rule for rule in val if rule != 'DEFAULT_RULES']
+            val = const.DEFAULT_RULES + [rule for rule in val if rule != 'DEFAULT_RULES']
         return val
 
     def _priority_from_env(self, val):
@@ -122,18 +92,21 @@ class Settings(dict):
             return self._rules_from_env(val)
         elif attr == 'priority':
             return dict(self._priority_from_env(val))
-        elif attr == 'wait_command':
+        elif attr in ('wait_command', 'history_limit', 'wait_slow_command'):
             return int(val)
-        elif attr in ('require_confirmation', 'no_colors', 'debug'):
+        elif attr in ('require_confirmation', 'no_colors', 'debug',
+                      'alter_history'):
             return val.lower() == 'true'
+        elif attr == 'slow_commands':
+            return val.split(':')
         else:
             return val
 
     def _settings_from_env(self):
         """Loads settings from env."""
         return {attr: self._val_from_env(env, attr)
-                for env, attr in ENV_TO_ATTR.items()
+                for env, attr in const.ENV_TO_ATTR.items()
                 if env in os.environ}
 
 
-settings = Settings(DEFAULT_SETTINGS)
+settings = Settings(const.DEFAULT_SETTINGS)

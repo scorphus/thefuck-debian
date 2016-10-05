@@ -20,7 +20,7 @@ Depends:
  ${misc:Depends},
  python-colorama,
  python-decorator,
- python-pathlib,
+ python-pathlib2,
  python-psutil,
  python-six
 Description: spelling corrector of console commands

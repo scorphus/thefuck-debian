@@ -1,3 +1,10 @@
+thefuck (3.11-2) unstable; urgency=medium
+
+  * Depend on python-pathlib2 instead of python-pathlib.
+    Thanks to Axel Beckert for the patch (Closes: #836748)
+
+ -- Alessio Treglia <alessio@debian.org>  Wed, 05 Oct 2016 07:24:14 +0100
+
 thefuck (3.11-1) unstable; urgency=medium
 
   * Imported Upstream version 3.11

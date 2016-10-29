@@ -21,6 +21,7 @@ Depends:
  python-colorama,
  python-decorator,
  python-pathlib2,
+ python-pkg-resources,
  python-psutil,
  python-six
 Description: spelling corrector of console commands

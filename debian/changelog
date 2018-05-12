@@ -1,3 +1,11 @@
+thefuck (3.11-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add the missing dependency on python-pkg-resources.
+    (Closes: #842393)
+
+ -- Adrian Bunk <bunk@debian.org>  Sat, 12 May 2018 10:22:28 +0300
+
 thefuck (3.11-2) unstable; urgency=medium
 
   * Depend on python-pathlib2 instead of python-pathlib.

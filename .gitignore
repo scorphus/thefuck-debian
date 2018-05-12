@@ -61,6 +61,3 @@ target/
 
 # vim temporary files
 .*.swp
-
-# Debian packaging
-/.pc

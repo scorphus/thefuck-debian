@@ -1,4 +1,4 @@
-thefuck (3.29-0.1) UNRELEASED; urgency=medium
+thefuck (3.29-0.1) unstable; urgency=medium
 
   * Non-maintainer upload
   * New upstream release, to migrate to python 3; Closes: #897603
@@ -10,7 +10,7 @@ thefuck (3.29-0.1) UNRELEASED; urgency=medium
     - drop outdated X-P-V field
     - bump Standards-Version to 4.4.0 (no changes needed)
 
- -- Sandro Tosi <morph@debian.org>  Thu, 22 Aug 2019 18:14:58 -0400
+ -- Sandro Tosi <morph@debian.org>  Thu, 22 Aug 2019 18:15:36 -0400
 
 thefuck (3.11-2.1) unstable; urgency=medium
 

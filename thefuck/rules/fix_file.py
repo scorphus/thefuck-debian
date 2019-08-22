@@ -40,13 +40,15 @@ def _make_pattern(pattern):
                      .replace('{line}', '(?P<line>[0-9]+)') \
                      .replace('{col}', '(?P<col>[0-9]+)')
     return re.compile(pattern, re.MULTILINE)
+
+
 patterns = [_make_pattern(p).search for p in patterns]
 
 
 @memoize
-def _search(stderr):
+def _search(output):
     for pattern in patterns:
-        m = pattern(stderr)
+        m = pattern(output)
         if m and os.path.isfile(m.group('file')):
             return m
 
@@ -55,13 +57,13 @@ def match(command):
     if 'EDITOR' not in os.environ:
         return False
 
-    return _search(command.stderr) or _search(command.stdout)
+    return _search(command.output)
 
 
 @default_settings({'fixlinecmd': u'{editor} {file} +{line}',
                    'fixcolcmd': None})
 def get_new_command(command):
-    m = _search(command.stderr) or _search(command.stdout)
+    m = _search(command.output)
 
     # Note: there does not seem to be a standard for columns, so they are just
     # ignored by default

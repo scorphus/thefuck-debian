@@ -8,7 +8,7 @@ def _is_bad_zip(file):
     try:
         with zipfile.ZipFile(file, 'r') as archive:
             return len(archive.namelist()) > 1
-    except:
+    except Exception:
         return False
 
 
@@ -39,7 +39,7 @@ def match(command):
 
 def get_new_command(command):
     return u'{} -d {}'.format(
-            command.script, shell.quote(_zip_file(command)[:-4]))
+        command.script, shell.quote(_zip_file(command)[:-4]))
 
 
 def side_effect(old_cmd, command):

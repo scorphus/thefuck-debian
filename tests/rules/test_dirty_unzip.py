@@ -4,7 +4,7 @@ import os
 import pytest
 import zipfile
 from thefuck.rules.dirty_unzip import match, get_new_command, side_effect
-from tests.utils import Command
+from thefuck.types import Command
 from unicodedata import normalize
 
 
@@ -42,7 +42,7 @@ def zip_error(tmpdir):
     (u'unzip foo.zip', u'foo.zip')])
 def test_match(zip_error, script, filename):
     zip_error(filename)
-    assert match(Command(script=script))
+    assert match(Command(script, ''))
 
 
 @pytest.mark.parametrize('script,filename', [
@@ -52,7 +52,7 @@ def test_match(zip_error, script, filename):
     (u'unzip foo.zip', u'foo.zip')])
 def test_side_effect(zip_error, script, filename):
     zip_error(filename)
-    side_effect(Command(script=script), None)
+    side_effect(Command(script, ''), None)
 
     dir_list = os.listdir(u'.')
     if filename not in set(dir_list):
@@ -64,9 +64,8 @@ def test_side_effect(zip_error, script, filename):
 @pytest.mark.parametrize('script,fixed,filename', [
     (u'unzip café', u"unzip café -d 'café'", u'café.zip'),
     (u'unzip foo', u'unzip foo -d foo', u'foo.zip'),
-    (u"unzip foo\\ bar.zip", u"unzip foo\\ bar.zip -d 'foo bar'", u'foo.zip'),
     (u"unzip 'foo bar.zip'", u"unzip 'foo bar.zip' -d 'foo bar'", u'foo.zip'),
     (u'unzip foo.zip', u'unzip foo.zip -d foo', u'foo.zip')])
 def test_get_new_command(zip_error, script, fixed, filename):
     zip_error(filename)
-    assert get_new_command(Command(script=script)) == fixed
+    assert get_new_command(Command(script, '')) == fixed

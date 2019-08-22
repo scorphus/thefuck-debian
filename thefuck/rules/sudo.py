@@ -19,7 +19,10 @@ patterns = ['permission denied',
             'you don\'t have access to the history db.',
             'authentication is required',
             'edspermissionerror',
-            'you don\'t have write permissions']
+            'you don\'t have write permissions',
+            'use `sudo`',
+            'SudoRequiredError',
+            'error: insufficient privileges']
 
 
 def match(command):
@@ -27,8 +30,7 @@ def match(command):
         return False
 
     for pattern in patterns:
-        if pattern in command.stderr.lower()\
-                or pattern in command.stdout.lower():
+        if pattern in command.output.lower():
             return True
     return False
 

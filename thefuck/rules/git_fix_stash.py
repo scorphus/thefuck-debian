@@ -7,9 +7,10 @@ from thefuck.specific.git import git_support
 def match(command):
     if command.script_parts and len(command.script_parts) > 1:
         return (command.script_parts[1] == 'stash'
-                and 'usage:' in command.stderr)
+                and 'usage:' in command.output)
     else:
         return False
+
 
 # git's output here is too complicated to be parsed (see the test file)
 stash_commands = (

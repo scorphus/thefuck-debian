@@ -1,22 +1,57 @@
 import os
+from subprocess import Popen, PIPE
+from tempfile import gettempdir
+from uuid import uuid4
 from ..conf import settings
-from ..utils import memoize
+from ..const import ARGUMENT_PLACEHOLDER, USER_COMMAND_MARK
+from ..utils import DEVNULL, memoize
 from .generic import Generic
 
 
 class Bash(Generic):
-    def app_alias(self, fuck):
-        # It is VERY important to have the variables declared WITHIN the alias
-        alias = "alias {0}='TF_CMD=$(TF_ALIAS={0}" \
-                " PYTHONIOENCODING=utf-8" \
-                " TF_SHELL_ALIASES=$(alias)" \
-                " thefuck $(fc -ln -1)) &&" \
-                " eval $TF_CMD".format(fuck)
+    friendly_name = 'Bash'
 
-        if settings.alter_history:
-            return alias + " && history -s $TF_CMD'"
+    def app_alias(self, alias_name):
+        # It is VERY important to have the variables declared WITHIN the function
+        return '''
+            function {name} () {{
+                TF_PYTHONIOENCODING=$PYTHONIOENCODING;
+                export TF_SHELL=bash;
+                export TF_ALIAS={name};
+                export TF_SHELL_ALIASES=$(alias);
+                export TF_HISTORY=$(fc -ln -10);
+                export PYTHONIOENCODING=utf-8;
+                TF_CMD=$(
+                    thefuck {argument_placeholder} "$@"
+                ) && eval "$TF_CMD";
+                unset TF_HISTORY;
+                export PYTHONIOENCODING=$TF_PYTHONIOENCODING;
+                {alter_history}
+            }}
+        '''.format(
+            name=alias_name,
+            argument_placeholder=ARGUMENT_PLACEHOLDER,
+            alter_history=('history -s $TF_CMD;'
+                           if settings.alter_history else ''))
+
+    def instant_mode_alias(self, alias_name):
+        if os.environ.get('THEFUCK_INSTANT_MODE', '').lower() == 'true':
+            mark = USER_COMMAND_MARK + '\b' * len(USER_COMMAND_MARK)
+            return '''
+                export PS1="{user_command_mark}$PS1";
+                {app_alias}
+            '''.format(user_command_mark=mark,
+                       app_alias=self.app_alias(alias_name))
         else:
-            return alias + "'"
+            log_path = os.path.join(
+                gettempdir(), 'thefuck-script-log-{}'.format(uuid4().hex))
+            return '''
+                export THEFUCK_INSTANT_MODE=True;
+                export THEFUCK_OUTPUT_LOG={log};
+                thefuck --shell-logger {log};
+                rm {log};
+                exit
+            '''.format(log=log_path)
 
     def _parse_alias(self, alias):
         name, value = alias.replace('alias ', '', 1).split('=', 1)
@@ -41,7 +76,17 @@ class Bash(Generic):
         if os.path.join(os.path.expanduser('~'), '.bashrc'):
             config = '~/.bashrc'
         elif os.path.join(os.path.expanduser('~'), '.bash_profile'):
-            config = '~/.bashrc'
+            config = '~/.bash_profile'
         else:
             config = 'bash config'
-        return 'eval $(thefuck --alias)', config
+
+        return self._create_shell_configuration(
+            content=u'eval "$(thefuck --alias)"',
+            path=config,
+            reload=u'source {}'.format(config))
+
+    def _get_version(self):
+        """Returns the version of the current shell"""
+        proc = Popen(['bash', '-c', 'echo $BASH_VERSION'],
+                     stdout=PIPE, stderr=DEVNULL)
+        return proc.stdout.read().decode('utf-8').strip()

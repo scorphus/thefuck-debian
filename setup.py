@@ -3,6 +3,8 @@ from setuptools import setup, find_packages
 import pkg_resources
 import sys
 import os
+import fastentrypoints
+
 
 try:
     if int(pkg_resources.get_distribution("pip").version.split('.')[0]) < 6:
@@ -24,15 +26,16 @@ if version < (2, 7):
     print('thefuck requires Python version 2.7 or later' +
           ' ({}.{} detected).'.format(*version))
     sys.exit(-1)
-elif (3, 0) < version < (3, 3):
-    print('thefuck requires Python version 3.3 or later' +
+elif (3, 0) < version < (3, 4):
+    print('thefuck requires Python version 3.4 or later' +
           ' ({}.{} detected).'.format(*version))
     sys.exit(-1)
 
-VERSION = '3.11'
+VERSION = '3.29'
 
-install_requires = ['psutil', 'colorama', 'six', 'decorator']
+install_requires = ['psutil', 'colorama', 'six', 'decorator', 'pyte']
 extras_require = {':python_version<"3.4"': ['pathlib2'],
+                  ':python_version<"3.3"': ['backports.shutil_get_terminal_size'],
                   ":sys_platform=='win32'": ['win_unicode_console']}
 
 setup(name='thefuck',
@@ -50,6 +53,5 @@ setup(name='thefuck',
       install_requires=install_requires,
       extras_require=extras_require,
       entry_points={'console_scripts': [
-          'thefuck = thefuck.main:main',
-          'thefuck-alias = thefuck.main:print_alias',
-          'fuck = thefuck.main:how_to_configure_alias']})
+          'thefuck = thefuck.entrypoints.main:main',
+          'fuck = thefuck.entrypoints.not_configured:main']})

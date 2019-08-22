@@ -1,25 +1,23 @@
 # -*- coding: utf-8 -*-
 
 import os
-from subprocess import PIPE
+from subprocess import PIPE, STDOUT
 from mock import Mock
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 import pytest
-from tests.utils import CorrectedCommand, Rule, Command
+from tests.utils import CorrectedCommand, Rule
 from thefuck import const
 from thefuck.exceptions import EmptyCommand
+from thefuck.system import Path
+from thefuck.types import Command
 
 
 class TestCorrectedCommand(object):
 
     def test_equality(self):
-        assert CorrectedCommand('ls', None, 100) == \
-               CorrectedCommand('ls', None, 200)
-        assert CorrectedCommand('ls', None, 100) != \
-               CorrectedCommand('ls', lambda *_: _, 100)
+        assert (CorrectedCommand('ls', None, 100) ==
+                CorrectedCommand('ls', None, 200))
+        assert (CorrectedCommand('ls', None, 100) !=
+                CorrectedCommand('ls', lambda *_: _, 100))
 
     def test_hashable(self):
         assert {CorrectedCommand('ls', None, 100),
@@ -30,6 +28,20 @@ class TestCorrectedCommand(object):
                'CorrectedCommand(script=ls, side_effect=None, priority=100)'
         assert u'{}'.format(CorrectedCommand(u'echo café', None, 100)) == \
                u'CorrectedCommand(script=echo café, side_effect=None, priority=100)'
+
+    @pytest.mark.parametrize('script, printed, override_settings', [
+        ('git branch', 'git branch', {'repeat': False, 'debug': False}),
+        ('git brunch',
+         "git brunch || fuck --repeat --force-command 'git brunch'",
+         {'repeat': True, 'debug': False}),
+        ('git brunch',
+         "git brunch || fuck --repeat --debug --force-command 'git brunch'",
+         {'repeat': True, 'debug': True})])
+    def test_run(self, capsys, settings, script, printed, override_settings):
+        settings.update(override_settings)
+        CorrectedCommand(script, None, 1000).run(Command(script, ''))
+        out, _ = capsys.readouterr()
+        assert out[:-1] == printed
 
 
 class TestRule(object):
@@ -44,8 +56,8 @@ class TestRule(object):
                               priority=900,
                               requires_output=True))
         rule_path = os.path.join(os.sep, 'rules', 'bash.py')
-        assert Rule.from_path(Path(rule_path)) \
-               == Rule('bash', match, get_new_command, priority=900)
+        assert (Rule.from_path(Path(rule_path))
+                == Rule('bash', match, get_new_command, priority=900))
         load_source.assert_called_once_with('bash', rule_path)
 
     @pytest.mark.parametrize('rules, exclude_rules, rule, is_enabled', [
@@ -66,59 +78,57 @@ class TestRule(object):
 
     def test_isnt_match(self):
         assert not Rule('', lambda _: False).is_match(
-            Command('ls'))
+            Command('ls', ''))
 
     def test_is_match(self):
         rule = Rule('', lambda x: x.script == 'cd ..')
-        assert rule.is_match(Command('cd ..'))
+        assert rule.is_match(Command('cd ..', ''))
 
     @pytest.mark.usefixtures('no_colors')
     def test_isnt_match_when_rule_failed(self, capsys):
         rule = Rule('test', Mock(side_effect=OSError('Denied')),
                     requires_output=False)
-        assert not rule.is_match(Command('ls'))
+        assert not rule.is_match(Command('ls', ''))
         assert capsys.readouterr()[1].split('\n')[0] == '[WARN] Rule test:'
 
     def test_get_corrected_commands_with_rule_returns_list(self):
         rule = Rule(get_new_command=lambda x: [x.script + '!', x.script + '@'],
                     priority=100)
-        assert list(rule.get_corrected_commands(Command(script='test'))) \
-               == [CorrectedCommand(script='test!', priority=100),
-                   CorrectedCommand(script='test@', priority=200)]
+        assert (list(rule.get_corrected_commands(Command('test', '')))
+                == [CorrectedCommand(script='test!', priority=100),
+                    CorrectedCommand(script='test@', priority=200)])
 
     def test_get_corrected_commands_with_rule_returns_command(self):
         rule = Rule(get_new_command=lambda x: x.script + '!',
                     priority=100)
-        assert list(rule.get_corrected_commands(Command(script='test'))) \
-               == [CorrectedCommand(script='test!', priority=100)]
+        assert (list(rule.get_corrected_commands(Command('test', '')))
+                == [CorrectedCommand(script='test!', priority=100)])
 
 
 class TestCommand(object):
     @pytest.fixture(autouse=True)
     def Popen(self, monkeypatch):
         Popen = Mock()
-        Popen.return_value.stdout.read.return_value = b'stdout'
-        Popen.return_value.stderr.read.return_value = b'stderr'
-        monkeypatch.setattr('thefuck.types.Popen', Popen)
+        Popen.return_value.stdout.read.return_value = b'output'
+        monkeypatch.setattr('thefuck.output_readers.rerun.Popen', Popen)
         return Popen
 
     @pytest.fixture(autouse=True)
     def prepare(self, monkeypatch):
-        monkeypatch.setattr('thefuck.types.os.environ', {})
-        monkeypatch.setattr('thefuck.types.Command._wait_output',
-                            staticmethod(lambda *_: True))
+        monkeypatch.setattr('thefuck.output_readers.rerun._wait_output',
+                            lambda *_: True)
 
-    def test_from_script_calls(self, Popen, settings):
+    def test_from_script_calls(self, Popen, settings, os_environ):
         settings.env = {}
         assert Command.from_raw_script(
             ['apt-get', 'search', 'vim']) == Command(
-            'apt-get search vim', 'stdout', 'stderr')
+            'apt-get search vim', 'output')
         Popen.assert_called_once_with('apt-get search vim',
                                       shell=True,
                                       stdin=PIPE,
                                       stdout=PIPE,
-                                      stderr=PIPE,
-                                      env={})
+                                      stderr=STDOUT,
+                                      env=os_environ)
 
     @pytest.mark.parametrize('script, result', [
         ([''], None),

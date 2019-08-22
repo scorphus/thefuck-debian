@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-try:
-    from pathlib import Path
-    pathlib_name = 'pathlib'
-except ImportError:
-    from pathlib2 import Path
-    pathlib_name = 'pathlib2'
+from tests.utils import Rule, CorrectedCommand
 from thefuck import corrector, const
-from tests.utils import Rule, Command, CorrectedCommand
+from thefuck.system import Path
+from thefuck.types import Command
 from thefuck.corrector import get_corrected_commands, organize_commands
 
 
@@ -16,7 +12,7 @@ class TestGetRules(object):
     @pytest.fixture
     def glob(self, mocker):
         results = {}
-        mocker.patch(pathlib_name + '.Path.glob',
+        mocker.patch('thefuck.system.Path.glob',
                      new_callable=lambda: lambda *_: results.pop('value', []))
         return lambda value: results.update({'value': value})
 
@@ -44,7 +40,7 @@ class TestGetRules(object):
 
 
 def test_get_corrected_commands(mocker):
-    command = Command('test', 'test', 'test')
+    command = Command('test', 'test')
     rules = [Rule(match=lambda _: False),
              Rule(match=lambda _: True,
                   get_new_command=lambda x: x.script + '!', priority=100),
@@ -52,8 +48,8 @@ def test_get_corrected_commands(mocker):
                   get_new_command=lambda x: [x.script + '@', x.script + ';'],
                   priority=60)]
     mocker.patch('thefuck.corrector.get_rules', return_value=rules)
-    assert [cmd.script for cmd in get_corrected_commands(command)] \
-           == ['test!', 'test@', 'test;']
+    assert ([cmd.script for cmd in get_corrected_commands(command)]
+            == ['test!', 'test@', 'test;'])
 
 
 def test_organize_commands():

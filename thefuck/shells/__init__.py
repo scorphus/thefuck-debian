@@ -16,13 +16,21 @@ shells = {'bash': Bash,
           'zsh': Zsh,
           'csh': Tcsh,
           'tcsh': Tcsh,
-          'powershell': Powershell}
+          'powershell': Powershell,
+          'pwsh': Powershell}
 
 
-def _get_shell():
+def _get_shell_from_env():
+    name = os.environ.get('TF_SHELL')
+
+    if name in shells:
+        return shells[name]()
+
+
+def _get_shell_from_proc():
     proc = Process(os.getpid())
 
-    while proc is not None:
+    while proc is not None and proc.pid > 0:
         try:
             name = proc.name()
         except TypeError:
@@ -41,4 +49,4 @@ def _get_shell():
     return Generic()
 
 
-shell = _get_shell()
+shell = _get_shell_from_env() or _get_shell_from_proc()

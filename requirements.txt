@@ -1,4 +1,4 @@
-pip
+flake8
 pytest
 mock
 pytest-mock
@@ -8,3 +8,4 @@ pexpect
 pypandoc
 pytest-benchmark
 pytest-docker-pexpect
+twine

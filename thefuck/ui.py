@@ -4,6 +4,7 @@ import sys
 from .conf import settings
 from .exceptions import NoRuleMatched
 from .system import get_key
+from .utils import get_alias
 from . import logs, const
 
 
@@ -12,9 +13,10 @@ def read_actions():
     while True:
         key = get_key()
 
-        if key in (const.KEY_UP, 'k'):
+        # Handle arrows, j/k (qwerty), and n/e (colemak)
+        if key in (const.KEY_UP, const.KEY_CTRL_N, 'k', 'e'):
             yield const.ACTION_PREVIOUS
-        elif key in (const.KEY_DOWN, 'j'):
+        elif key in (const.KEY_DOWN, const.KEY_CTRL_P, 'j', 'n'):
             yield const.ACTION_NEXT
         elif key in (const.KEY_CTRL_C, 'q'):
             yield const.ACTION_ABORT
@@ -50,7 +52,7 @@ class CommandSelector(object):
 
     @property
     def value(self):
-        """:rtype hefuck.types.CorrectedCommand"""
+        """:rtype thefuck.types.CorrectedCommand"""
         return self._commands[self._index]
 
 
@@ -68,7 +70,8 @@ def select_command(corrected_commands):
     try:
         selector = CommandSelector(corrected_commands)
     except NoRuleMatched:
-        logs.failed('No fucks given')
+        logs.failed('No fucks given' if get_alias() == 'fuck'
+                    else 'Nothing found')
         return
 
     if not settings.require_confirmation:

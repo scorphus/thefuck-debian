@@ -2,13 +2,12 @@
 
 import pytest
 import warnings
-from mock import Mock
-import six
+from mock import Mock, call, patch
 from thefuck.utils import default_settings, \
     memoize, get_closest, get_all_executables, replace_argument, \
-    get_all_matched_commands, is_app, for_app, cache, compatibility_call, \
-    get_valid_history_without_current
-from tests.utils import Command
+    get_all_matched_commands, is_app, for_app, cache, \
+    get_valid_history_without_current, _cache, get_close_matches
+from thefuck.types import Command
 
 
 @pytest.mark.parametrize('override, old, new', [
@@ -18,8 +17,7 @@ from tests.utils import Command
 def test_default_settings(settings, override, old, new):
     settings.clear()
     settings.update(old)
-    fn = lambda _: _
-    default_settings(override)(fn)(None)
+    default_settings(override)(lambda _: _)(None)
     assert settings == new
 
 
@@ -52,6 +50,18 @@ class TestGetClosest(object):
                            fallback_to_first=False) is None
 
 
+class TestGetCloseMatches(object):
+    @patch('thefuck.utils.difflib_get_close_matches')
+    def test_call_with_n(self, difflib_mock):
+        get_close_matches('', [], 1)
+        assert difflib_mock.call_args[0][2] == 1
+
+    @patch('thefuck.utils.difflib_get_close_matches')
+    def test_call_without_n(self, difflib_mock, settings):
+        get_close_matches('', [])
+        assert difflib_mock.call_args[0][2] == settings.get('num_close_matches')
+
+
 @pytest.fixture
 def get_aliases(mocker):
     mocker.patch('thefuck.shells.shell.get_aliases',
@@ -64,6 +74,24 @@ def test_get_all_executables():
     assert 'vim' in all_callables
     assert 'fsck' in all_callables
     assert 'fuck' not in all_callables
+
+
+@pytest.fixture
+def os_environ_pathsep(monkeypatch, path, pathsep):
+    env = {'PATH': path}
+    monkeypatch.setattr('os.environ', env)
+    monkeypatch.setattr('os.pathsep', pathsep)
+    return env
+
+
+@pytest.mark.usefixtures('no_memoize', 'os_environ_pathsep')
+@pytest.mark.parametrize('path, pathsep', [
+    ('/foo:/bar:/baz:/foo/bar', ':'),
+    (r'C:\\foo;C:\\bar;C:\\baz;C:\\foo\\bar', ';')])
+def test_get_all_executables_pathsep(path, pathsep):
+    with patch('thefuck.utils.Path') as Path_mock:
+        get_all_executables()
+        Path_mock.assert_has_calls([call(p) for p in path.split(pathsep)], True)
 
 
 @pytest.mark.parametrize('args, result', [
@@ -108,7 +136,7 @@ def test_get_all_matched_commands(stderr, result):
     ('hub diff', ['git', 'hub'], True),
     ('hg diff', ['git', 'hub'], False)])
 def test_is_app(script, names, result):
-    assert is_app(Command(script), *names) == result
+    assert is_app(Command(script, ''), *names) == result
 
 
 @pytest.mark.usefixtures('no_memoize')
@@ -121,14 +149,10 @@ def test_for_app(script, names, result):
     def match(command):
         return True
 
-    assert match(Command(script)) == result
+    assert match(Command(script, '')) == result
 
 
 class TestCache(object):
-    @pytest.fixture(autouse=True)
-    def enable_cache(self, monkeypatch):
-        monkeypatch.setattr('thefuck.utils.cache.disabled', False)
-
     @pytest.fixture
     def shelve(self, mocker):
         value = {}
@@ -153,6 +177,11 @@ class TestCache(object):
         return value
 
     @pytest.fixture(autouse=True)
+    def enable_cache(self, monkeypatch, shelve):
+        monkeypatch.setattr('thefuck.utils.cache.disabled', False)
+        _cache._init_db()
+
+    @pytest.fixture(autouse=True)
     def mtime(self, mocker):
         mocker.patch('thefuck.utils.os.path.getmtime', return_value=0)
 
@@ -165,11 +194,10 @@ class TestCache(object):
         return fn
 
     @pytest.fixture
-    def key(self):
-        if six.PY2:
-            return 'tests.test_utils.<function fn '
-        else:
-            return 'tests.test_utils.<function TestCache.fn.<locals>.fn '
+    def key(self, monkeypatch):
+        monkeypatch.setattr('thefuck.utils.Cache._get_key',
+                            lambda *_: 'key')
+        return 'key'
 
     def test_with_blank_cache(self, shelve, fn, key):
         assert shelve == {}
@@ -186,56 +214,6 @@ class TestCache(object):
         shelve.update({key: {'etag': '-1', 'value': 'old-value'}})
         assert fn() == 'test'
         assert shelve == {key: {'etag': '0', 'value': 'test'}}
-
-
-class TestCompatibilityCall(object):
-    def test_match(self):
-        def match(command):
-            assert command == Command()
-            return True
-
-        assert compatibility_call(match, Command())
-
-    def test_old_match(self, settings):
-        def match(command, _settings):
-            assert command == Command()
-            assert settings == _settings
-            return True
-
-        with pytest.warns(UserWarning):
-            assert compatibility_call(match, Command())
-
-    def test_get_new_command(self):
-        def get_new_command(command):
-            assert command == Command()
-            return True
-
-        assert compatibility_call(get_new_command, Command())
-
-    def test_old_get_new_command(self, settings):
-        def get_new_command(command, _settings):
-            assert command == Command()
-            assert settings == _settings
-            return True
-
-        with pytest.warns(UserWarning):
-            assert compatibility_call(get_new_command, Command())
-
-    def test_side_effect(self):
-        def side_effect(command, new_command):
-            assert command == Command() == new_command
-            return True
-
-        assert compatibility_call(side_effect, Command(), Command())
-
-    def test_old_side_effect(self, settings):
-        def side_effect(command, new_command, _settings):
-            assert command == Command() == new_command
-            assert settings == _settings
-            return True
-
-        with pytest.warns(UserWarning):
-            assert compatibility_call(side_effect, Command(), Command())
 
 
 class TestGetValidHistoryWithoutCurrent(object):
@@ -257,8 +235,7 @@ class TestGetValidHistoryWithoutCurrent(object):
                             return_value='fuck')
 
     @pytest.fixture(autouse=True)
-    def bins(self, mocker, monkeypatch):
-        monkeypatch.setattr('thefuck.conf.os.environ', {'PATH': 'path'})
+    def bins(self, mocker):
         callables = list()
         for name in ['diff', 'ls', 'café']:
             bin_mock = mocker.Mock(name=name)
@@ -274,5 +251,5 @@ class TestGetValidHistoryWithoutCurrent(object):
         (u'cafe ô', ['ls cat', 'diff x', u'café ô']),
     ])
     def test_get_valid_history_without_current(self, script, result):
-        command = Command(script=script)
+        command = Command(script, '')
         assert get_valid_history_without_current(command) == result

@@ -1,16 +1,14 @@
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
+import os
 import pytest
 from thefuck import shells
 from thefuck import conf, const
+from thefuck.system import Path
 
 shells.shell = shells.Generic()
 
 
 def pytest_addoption(parser):
-    """Adds `--run-without-docker` argument."""
+    """Adds `--enable-functional` argument."""
     group = parser.getgroup("thefuck")
     group.addoption('--enable-functional', action="store_true", default=False,
                     help="Enable functional tests")
@@ -44,7 +42,7 @@ def no_cache(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def functional(request):
-    if request.node.get_marker('functional') \
+    if request.node.get_closest_marker('functional') \
             and not request.config.getoption('enable_functional'):
         pytest.skip('functional tests are disabled')
 
@@ -55,11 +53,17 @@ def source_root():
 
 
 @pytest.fixture
-def set_shell(monkeypatch, request):
+def set_shell(monkeypatch):
     def _set(cls):
         shell = cls()
         monkeypatch.setattr('thefuck.shells.shell', shell)
-        request.addfinalizer()
         return shell
 
     return _set
+
+
+@pytest.fixture(autouse=True)
+def os_environ(monkeypatch):
+    env = {'PATH': os.environ['PATH']}
+    monkeypatch.setattr('os.environ', env)
+    return env

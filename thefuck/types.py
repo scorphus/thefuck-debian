@@ -1,31 +1,37 @@
 from imp import load_source
-from subprocess import Popen, PIPE
 import os
 import sys
-import six
-from psutil import Process, TimeoutExpired
 from . import logs
 from .shells import shell
 from .conf import settings
 from .const import DEFAULT_PRIORITY, ALL_ENABLED
 from .exceptions import EmptyCommand
-from .utils import compatibility_call
+from .utils import get_alias, format_raw_script
+from .output_readers import get_output
 
 
 class Command(object):
     """Command that should be fixed."""
 
-    def __init__(self, script, stdout, stderr):
+    def __init__(self, script, output):
         """Initializes command with given values.
 
         :type script: basestring
-        :type stdout: basestring
-        :type stderr: basestring
+        :type output: basestring
 
         """
         self.script = script
-        self.stdout = stdout
-        self.stderr = stderr
+        self.output = output
+
+    @property
+    def stdout(self):
+        logs.warn('`stdout` is deprecated, please use `output` instead')
+        return self.output
+
+    @property
+    def stderr(self):
+        logs.warn('`stderr` is deprecated, please use `output` instead')
+        return self.output
 
     @property
     def script_parts(self):
@@ -35,19 +41,19 @@ class Command(object):
             except Exception:
                 logs.debug(u"Can't split command script {} because:\n {}".format(
                     self, sys.exc_info()))
-                self._script_parts = None
+                self._script_parts = []
+
         return self._script_parts
 
     def __eq__(self, other):
         if isinstance(other, Command):
-            return (self.script, self.stdout, self.stderr) \
-                   == (other.script, other.stdout, other.stderr)
+            return (self.script, self.output) == (other.script, other.output)
         else:
             return False
 
     def __repr__(self):
-        return u'Command(script={}, stdout={}, stderr={})'.format(
-            self.script, self.stdout, self.stderr)
+        return u'Command(script={}, output={})'.format(
+            self.script, self.output)
 
     def update(self, **kwargs):
         """Returns new command with replaced fields.
@@ -56,47 +62,8 @@ class Command(object):
 
         """
         kwargs.setdefault('script', self.script)
-        kwargs.setdefault('stdout', self.stdout)
-        kwargs.setdefault('stderr', self.stderr)
+        kwargs.setdefault('output', self.output)
         return Command(**kwargs)
-
-    @staticmethod
-    def _wait_output(popen, is_slow):
-        """Returns `True` if we can get output of the command in the
-        `settings.wait_command` time.
-
-        Command will be killed if it wasn't finished in the time.
-
-        :type popen: Popen
-        :rtype: bool
-
-        """
-        proc = Process(popen.pid)
-        try:
-            proc.wait(settings.wait_slow_command if is_slow
-                      else settings.wait_command)
-            return True
-        except TimeoutExpired:
-            for child in proc.children(recursive=True):
-                child.kill()
-            proc.kill()
-            return False
-
-    @staticmethod
-    def _prepare_script(raw_script):
-        """Creates single script from a list of script parts.
-
-        :type raw_script: [basestring]
-        :rtype: basestring
-
-        """
-        if six.PY2:
-            script = ' '.join(arg.decode('utf-8') for arg in raw_script)
-        else:
-            script = ' '.join(raw_script)
-
-        script = script.strip()
-        return shell.from_shell(script)
 
     @classmethod
     def from_raw_script(cls, raw_script):
@@ -107,29 +74,13 @@ class Command(object):
         :raises: EmptyCommand
 
         """
-        script = cls._prepare_script(raw_script)
+        script = format_raw_script(raw_script)
         if not script:
             raise EmptyCommand
 
-        env = dict(os.environ)
-        env.update(settings.env)
-
-        is_slow = script.split(' ')[0] in settings.slow_commands
-        with logs.debug_time(u'Call: {}; with env: {}; is slow: '.format(
-                script, env, is_slow)):
-            result = Popen(script, shell=True, stdin=PIPE,
-                           stdout=PIPE, stderr=PIPE, env=env)
-            if cls._wait_output(result, is_slow):
-                stdout = result.stdout.read().decode('utf-8')
-                stderr = result.stderr.read().decode('utf-8')
-
-                logs.debug(u'Received stdout: {}'.format(stdout))
-                logs.debug(u'Received stderr: {}'.format(stderr))
-
-                return cls(script, stdout, stderr)
-            else:
-                logs.debug(u'Execution timed out!')
-                return cls(script, None, None)
+        expanded = shell.from_shell(script)
+        output = get_output(script, expanded)
+        return cls(expanded, output)
 
 
 class Rule(object):
@@ -159,12 +110,12 @@ class Rule(object):
 
     def __eq__(self, other):
         if isinstance(other, Rule):
-            return (self.name, self.match, self.get_new_command,
-                    self.enabled_by_default, self.side_effect,
-                    self.priority, self.requires_output) \
-                   == (other.name, other.match, other.get_new_command,
-                       other.enabled_by_default, other.side_effect,
-                       other.priority, other.requires_output)
+            return ((self.name, self.match, self.get_new_command,
+                     self.enabled_by_default, self.side_effect,
+                     self.priority, self.requires_output)
+                    == (other.name, other.match, other.get_new_command,
+                        other.enabled_by_default, other.side_effect,
+                        other.priority, other.requires_output))
         else:
             return False
 
@@ -172,9 +123,9 @@ class Rule(object):
         return 'Rule(name={}, match={}, get_new_command={}, ' \
                'enabled_by_default={}, side_effect={}, ' \
                'priority={}, requires_output)'.format(
-            self.name, self.match, self.get_new_command,
-            self.enabled_by_default, self.side_effect,
-            self.priority, self.requires_output)
+                   self.name, self.match, self.get_new_command,
+                   self.enabled_by_default, self.side_effect,
+                   self.priority, self.requires_output)
 
     @classmethod
     def from_path(cls, path):
@@ -218,14 +169,12 @@ class Rule(object):
         :rtype: bool
 
         """
-        script_only = command.stdout is None and command.stderr is None
-
-        if script_only and self.requires_output:
+        if command.output is None and self.requires_output:
             return False
 
         try:
             with logs.debug_time(u'Trying rule: {};'.format(self.name)):
-                if compatibility_call(self.match, command):
+                if self.match(command):
                     return True
         except Exception:
             logs.rule_failed(self, sys.exc_info())
@@ -237,7 +186,7 @@ class Rule(object):
         :rtype: Iterable[CorrectedCommand]
 
         """
-        new_commands = compatibility_call(self.get_new_command, command)
+        new_commands = self.get_new_command(command)
         if not isinstance(new_commands, list):
             new_commands = (new_commands,)
         for n, new_command in enumerate(new_commands):
@@ -276,6 +225,22 @@ class CorrectedCommand(object):
         return u'CorrectedCommand(script={}, side_effect={}, priority={})'.format(
             self.script, self.side_effect, self.priority)
 
+    def _get_script(self):
+        """Returns fixed commands script.
+
+        If `settings.repeat` is `True`, appends command with second attempt
+        of running fuck in case fixed command fails again.
+
+        """
+        if settings.repeat:
+            repeat_fuck = '{} --repeat {}--force-command {}'.format(
+                get_alias(),
+                '--debug ' if settings.debug else '',
+                shell.quote(self.script))
+            return shell.or_(self.script, repeat_fuck)
+        else:
+            return self.script
+
     def run(self, old_cmd):
         """Runs command from rule for passed command.
 
@@ -283,10 +248,11 @@ class CorrectedCommand(object):
 
         """
         if self.side_effect:
-            compatibility_call(self.side_effect, old_cmd, self.script)
+            self.side_effect(old_cmd, self.script)
         if settings.alter_history:
             shell.put_to_history(self.script)
         # This depends on correct setting of PYTHONIOENCODING by the alias:
         logs.debug(u'PYTHONIOENCODING: {}'.format(
             os.environ.get('PYTHONIOENCODING', '!!not-set!!')))
-        print(self.script)
+
+        print(self._get_script())

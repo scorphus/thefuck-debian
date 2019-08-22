@@ -24,12 +24,17 @@ def get_pkgfile(command):
         ).splitlines()
 
         return [package.split()[0] for package in packages]
-    except subprocess.CalledProcessError:
-        return None
+    except subprocess.CalledProcessError as err:
+        if err.returncode == 1 and err.output == "":
+            return []
+        else:
+            raise err
 
 
 def archlinux_env():
-    if utils.which('yaourt'):
+    if utils.which('yay'):
+        pacman = 'yay'
+    elif utils.which('yaourt'):
         pacman = 'yaourt'
     elif utils.which('pacman'):
         pacman = 'sudo pacman'

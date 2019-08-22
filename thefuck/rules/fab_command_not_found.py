@@ -3,7 +3,7 @@ from thefuck.utils import eager, get_closest, for_app
 
 @for_app('fab')
 def match(command):
-    return 'Warning: Command(s) not found:' in command.stderr
+    return 'Warning: Command(s) not found:' in command.output
 
 
 # We need different behavior then in get_all_matched_commands.
@@ -24,9 +24,10 @@ def _get_between(content, start, end=None):
 
 def get_new_command(command):
     not_found_commands = _get_between(
-        command.stderr, 'Warning: Command(s) not found:', 'Available commands:')
+        command.output, 'Warning: Command(s) not found:',
+        'Available commands:')
     possible_commands = _get_between(
-        command.stdout, 'Available commands:')
+        command.output, 'Available commands:')
 
     script = command.script
     for not_found in not_found_commands:

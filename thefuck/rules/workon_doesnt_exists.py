@@ -1,9 +1,5 @@
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
-
 from thefuck.utils import for_app, replace_command, eager, memoize
+from thefuck.system import Path
 
 
 @memoize
@@ -30,7 +26,7 @@ def get_new_command(command):
 
     available = _get_all_environments()
     if available:
-        return replace_command(command, misspelled_env, available) \
-               + [create_new]
+        return (replace_command(command, misspelled_env, available)
+                + [create_new])
     else:
         return create_new

@@ -1,12 +1,10 @@
 from imp import load_source
 import os
 import sys
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
+from warnings import warn
 from six import text_type
 from . import const
+from .system import Path
 
 
 class Settings(dict):
@@ -16,7 +14,7 @@ class Settings(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
-    def init(self):
+    def init(self, args=None):
         """Fills `settings` with values from `settings.py` and env."""
         from .logs import exception
 
@@ -33,6 +31,8 @@ class Settings(dict):
         except Exception:
             exception("Can't load settings from env", sys.exc_info())
 
+        self.update(self._settings_from_args(args))
+
     def _init_settings_file(self):
         settings_path = self.user_dir.joinpath('settings.py')
         if not settings_path.is_file():
@@ -42,15 +42,18 @@ class Settings(dict):
                     settings_file.write(u'# {} = {}\n'.format(*setting))
 
     def _get_user_dir_path(self):
-        # for backward compatibility, use `~/.thefuck` if it exists
-        legacy_user_dir = Path(os.path.expanduser('~/.thefuck'))
+        """Returns Path object representing the user config resource"""
+        xdg_config_home = os.environ.get('XDG_CONFIG_HOME', '~/.config')
+        user_dir = Path(xdg_config_home, 'thefuck').expanduser()
+        legacy_user_dir = Path('~', '.thefuck').expanduser()
 
+        # For backward compatibility use legacy '~/.thefuck' if it exists:
         if legacy_user_dir.is_dir():
+            warn(u'Config path {} is deprecated. Please move to {}'.format(
+                legacy_user_dir, user_dir))
             return legacy_user_dir
         else:
-            default_xdg_config_dir = os.path.expanduser("~/.config")
-            xdg_config_dir = os.getenv("XDG_CONFIG_HOME", default_xdg_config_dir)
-            return Path(os.path.join(xdg_config_dir, 'thefuck'))
+            return user_dir
 
     def _setup_user_dir(self):
         """Returns user config dir, create it when it doesn't exist."""
@@ -92,10 +95,11 @@ class Settings(dict):
             return self._rules_from_env(val)
         elif attr == 'priority':
             return dict(self._priority_from_env(val))
-        elif attr in ('wait_command', 'history_limit', 'wait_slow_command'):
+        elif attr in ('wait_command', 'history_limit', 'wait_slow_command',
+                      'num_close_matches'):
             return int(val)
         elif attr in ('require_confirmation', 'no_colors', 'debug',
-                      'alter_history'):
+                      'alter_history', 'instant_mode'):
             return val.lower() == 'true'
         elif attr == 'slow_commands':
             return val.split(':')
@@ -107,6 +111,20 @@ class Settings(dict):
         return {attr: self._val_from_env(env, attr)
                 for env, attr in const.ENV_TO_ATTR.items()
                 if env in os.environ}
+
+    def _settings_from_args(self, args):
+        """Loads settings from args."""
+        if not args:
+            return {}
+
+        from_args = {}
+        if args.yes:
+            from_args['require_confirmation'] = not args.yes
+        if args.debug:
+            from_args['debug'] = args.debug
+        if args.repeat:
+            from_args['repeat'] = args.repeat
+        return from_args
 
 
 settings = Settings(const.DEFAULT_SETTINGS)

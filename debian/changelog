@@ -2,8 +2,10 @@ thefuck (3.29-0.1) UNRELEASED; urgency=medium
 
   * Non-maintainer upload
   * New upstream release, to migrate to python 3; Closes: #897603
+  * debian/copyright
+    - update to reflect new upstream release
 
- -- Sandro Tosi <morph@debian.org>  Thu, 22 Aug 2019 16:28:55 -0400
+ -- Sandro Tosi <morph@debian.org>  Thu, 22 Aug 2019 16:46:49 -0400
 
 thefuck (3.11-2.1) unstable; urgency=medium
 

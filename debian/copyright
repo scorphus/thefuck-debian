@@ -4,16 +4,21 @@ Upstream-Contact: Vladimir Iakovlev <nvbn.rm@gmail.com>
 Source: https://github.com/nvbn/thefuck/releases
 
 Files: *
-Copyright: 2015 Vladimir Iakovlev
+Copyright: 2015-2018 Vladimir Iakovlev
 License: Expat
 
 Files: debian/*
 Copyright: 2015 Alessio Treglia <alessio@debian.org>
 License: Expat
 
+Files: fastentrypoints.py
+Copyright: Copyright (c) 2016, Aaron Christianson
+License: BSD-2-Clause
+
+License: BSD-2-Clause
+ On a Debian system, the license text is at /usr/share/common-licenses/BSD
+
 License: Expat
- Copyright (c) 2015 Vladimir Iakovlev
- .
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights

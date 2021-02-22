@@ -145,7 +145,7 @@ eval $(thefuck --alias FUCK)
 Changes are only available in a new shell session. To make changes immediately
 available, run `source ~/.bashrc` (or your shell config file like `.zshrc`).
 
-To run fixed commands without confirmation, use the `--yeah` option (or just `-y` for short):
+To run fixed commands without confirmation, use the `--yeah` option (or just `-y` for short, or `--hard` if you're especially frustrated):
 
 ```bash
 fuck --yeah
@@ -182,7 +182,9 @@ following rules are enabled by default:
 * `cd_mkdir` &ndash; creates directories before cd'ing into them;
 * `cd_parent` &ndash; changes `cd..` to `cd ..`;
 * `chmod_x` &ndash; add execution bit;
+* `choco_install` &ndash; append common suffixes for chocolatey packages;
 * `composer_not_command` &ndash; fixes composer command name;
+* `cp_create_destination` &ndash; creates a new directory when you attempt to `cp` or `mv` to a non existent one
 * `cp_omitting_directory` &ndash; adds `-a` when you `cp` directory;
 * `cpp11` &ndash; adds missing `-std=c++11` to `g++` or `clang++`;
 * `dirty_untar` &ndash; fixes `tar x` command that untarred in the current directory;
@@ -191,6 +193,7 @@ following rules are enabled by default:
 * `django_south_merge` &ndash; adds `--merge` to inconsistent django south migration;
 * `docker_login` &ndash; executes a `docker login` and repeats the previous command;
 * `docker_not_command` &ndash; fixes wrong docker commands like `docker tags`;
+* `docker_image_being_used_by_container` &dash; removes the container that is using the image before removing the image;
 * `dry` &ndash; fixes repetitions like `git git push`;
 * `fab_command_not_found` &ndash; fix misspelled fabric commands;
 * `fix_alt_space` &ndash; replaces Alt+Space with Space character;
@@ -200,6 +203,7 @@ following rules are enabled by default:
 * `git_add_force` &ndash; adds `--force` to `git add <pathspec>...` when paths are .gitignore'd;
 * `git_bisect_usage` &ndash; fixes `git bisect strt`, `git bisect goood`, `git bisect rset`, etc. when bisecting;
 * `git_branch_delete` &ndash; changes `git branch -d` to `git branch -D`;
+* `git_branch_delete_checked_out` &ndash; changes `git branch -d` to `git checkout master && git branch -D` when trying to delete a checked out branch;
 * `git_branch_exists` &ndash; offers `git branch -d foo`, `git branch -D foo` or `git checkout foo` when creating a branch that already exists;
 * `git_branch_list` &ndash; catches `git branch list` in place of `git branch` and removes created branch;
 * `git_checkout` &ndash; fixes branch name or creates new branch;
@@ -226,12 +230,13 @@ following rules are enabled by default:
 * `git_rm_recursive` &ndash; adds `-r` when you try to `rm` a directory;
 * `git_rm_staged` &ndash;  adds `-f` or `--cached` when you try to `rm` a file with staged changes
 * `git_rebase_merge_dir` &ndash; offers `git rebase (--continue | --abort | --skip)` or removing the `.git/rebase-merge` dir when a rebase is in progress;
-* `git_remote_seturl_add` &ndash; runs `git remote add` when `git remote set_url` on nonexistant remote;
+* `git_remote_seturl_add` &ndash; runs `git remote add` when `git remote set_url` on nonexistent remote;
 * `git_stash` &ndash; stashes your local modifications before rebasing or switching branch;
 * `git_stash_pop` &ndash; adds your local modifications before popping stash, then resets;
 * `git_tag_force` &ndash; adds `--force` to `git tag <tagname>` when the tag already exists;
 * `git_two_dashes` &ndash; adds a missing dash to commands like `git commit -amend` or `git rebase -continue`;
 * `go_run` &ndash; appends `.go` extension when compiling/running Go programs;
+* `go_unknown_command` &ndash; fixes wrong `go` commands, for example `go bulid`;
 * `gradle_no_task` &ndash; fixes not found or ambiguous `gradle` task;
 * `gradle_wrapper` &ndash; replaces `gradle` with `./gradlew`;
 * `grep_arguments_order` &ndash; fixes `grep` arguments order for situations like `grep -lir . test`;
@@ -258,7 +263,7 @@ following rules are enabled by default:
 * `missing_space_before_subcommand` &ndash; fixes command with missing space like `npminstall`;
 * `mkdir_p` &ndash; adds `-p` when you try to create a directory without parent;
 * `mvn_no_command` &ndash; adds `clean package` to `mvn`;
-* `mvn_unknown_lifecycle_phase` &ndash; fixes misspelled lifecycle phases with `mvn`;
+* `mvn_unknown_lifecycle_phase` &ndash; fixes misspelled life cycle phases with `mvn`;
 * `npm_missing_script` &ndash; fixes `npm` custom script name in `npm run-script <script>`;
 * `npm_run_script` &ndash; adds missing `run-script` for custom `npm` scripts;
 * `npm_wrong_command` &ndash; fixes wrong npm commands like `npm urgrade`;
@@ -276,7 +281,8 @@ following rules are enabled by default:
 * `quotation_marks` &ndash; fixes uneven usage of `'` and `"` when containing args';
 * `path_from_history` &ndash; replaces not found path with similar absolute path from history;
 * `react_native_command_unrecognized` &ndash; fixes unrecognized `react-native` commands;
-* `remove_trailing_cedilla` &ndash; remove trailling cedillas `ç`, a common typo for european keyboard layouts;
+* `remove_shell_prompt_literal` &ndash; remove leading shell prompt symbol `$`, common when copying commands from documentations;
+* `remove_trailing_cedilla` &ndash; remove trailing cedillas `ç`, a common typo for european keyboard layouts;
 * `rm_dir` &ndash; adds `-rf` when you try to remove a directory;
 * `scm_correction` &ndash; corrects wrong scm like `hg log` to `git log`;
 * `sed_unterminated_s` &ndash; adds missing '/' to `sed`'s `s` commands;
@@ -286,6 +292,7 @@ following rules are enabled by default:
 * `sudo_command_from_user_path` &ndash; runs commands from users `$PATH` with `sudo`;
 * `switch_lang` &ndash; switches command from your local layout to en;
 * `systemctl` &ndash; correctly orders parameters of confusing `systemctl`;
+* `terraform_init.py` &ndash; run `terraform init` before plan or apply;
 * `test.py` &ndash; runs `py.test` instead of `test.py`;
 * `touch` &ndash; creates missing directories before "touching";
 * `tsuru_login` &ndash; runs `tsuru login` if not authenticated or session expired;
@@ -316,8 +323,10 @@ The following rules are enabled by default on specific platforms only:
 * `brew_unknown_command` &ndash; fixes wrong brew commands, for example `brew docto/brew doctor`;
 * `brew_update_formula` &ndash; turns `brew update <formula>` into `brew upgrade <formula>`;
 * `dnf_no_such_command` &ndash; fixes mistyped DNF commands;
+* `nixos_cmd_not_found` &ndash; installs apps on NixOS;
 * `pacman` &ndash; installs app with `pacman` if it is not installed (uses `yay` or `yaourt` if available);
 * `pacman_not_found` &ndash; fixes package name with `pacman`, `yay` or `yaourt`.
+* `yum_invalid_operation` &ndash; fixes invalid `yum` calls, like `yum isntall vim`;
 
 The following commands are bundled with *The Fuck*, but are not enabled by
 default:
@@ -348,8 +357,8 @@ Your rule should not change `Command`.
 
 **Rules api changed in 3.0:** To access a rule's settings, import it with
  `from thefuck.conf import settings`
-  
-`settings` is a special object assembled from `~/.config/thefuck/settings.py`, 
+
+`settings` is a special object assembled from `~/.config/thefuck/settings.py`,
 and values from env ([see more below](#settings)).
 
 A simple example rule for running a script with `sudo`:
@@ -383,7 +392,7 @@ requires_output = True
 Several *The Fuck* parameters can be changed in the file `$XDG_CONFIG_HOME/thefuck/settings.py`
 (`$XDG_CONFIG_HOME` defaults to `~/.config`):
 
-* `rules` &ndash; list of enabled rules, by default `thefuck.conf.DEFAULT_RULES`;
+* `rules` &ndash; list of enabled rules, by default `thefuck.const.DEFAULT_RULES`;
 * `exclude_rules` &ndash; list of disabled rules, by default `[]`;
 * `require_confirmation` &ndash; requires confirmation before running new command, by default `True`;
 * `wait_command` &ndash; max amount of time in seconds for getting previous command output;

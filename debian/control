@@ -9,8 +9,11 @@ Build-Depends:
  debhelper-compat (= 13),
  dh-python,
  python3,
- python3-setuptools,
+ python3-mock,
  python3-pyte,
+ python3-pytest-mock,
+ python3-pytest,
+ python3-setuptools,
 Standards-Version: 4.5.1
 Homepage: https://github.com/nvbn/thefuck
 Vcs-Git: https://salsa.debian.org/debian/thefuck.git
@@ -25,7 +28,7 @@ Depends:
  python3-decorator,
  python3-pkg-resources,
  python3-psutil,
- python3-six
+ python3-six,
 Description: spelling corrector of console commands
  The Fuck attempts to fix user's command line mistakes, by
  composing new commands applying a series of matching rules.

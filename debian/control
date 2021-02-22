@@ -6,7 +6,7 @@ Uploaders: Adrian Bunk <bunk@debian.org>,
            Pablo Santiago Blum de Aguiar <scorphus@gmail.com>,
            Sandro Tosi <morph@debian.org>
 Build-Depends:
- debhelper (>= 9~),
+ debhelper-compat (= 13),
  dh-python,
  python3,
  python3-setuptools,

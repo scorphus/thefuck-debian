@@ -34,7 +34,8 @@ def _parse_apt_get_and_cache_operations(help_text_lines):
                 return
 
             yield line.split()[0]
-        elif line.startswith('Commands:'):
+        elif line.startswith('Commands:') \
+                or line.startswith('Most used commands:'):
             is_commands_list = True
 
 
@@ -53,5 +54,10 @@ def _get_operations(app):
 @sudo_support
 def get_new_command(command):
     invalid_operation = command.output.split()[-1]
-    operations = _get_operations(command.script_parts[0])
-    return replace_command(command, invalid_operation, operations)
+
+    if invalid_operation == 'uninstall':
+        return [command.script.replace('uninstall', 'remove')]
+
+    else:
+        operations = _get_operations(command.script_parts[0])
+        return replace_command(command, invalid_operation, operations)

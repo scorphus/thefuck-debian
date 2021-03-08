@@ -1,7 +1,8 @@
 #!/usr/bin/make -f
 
-export PYBUILD_DISABLE=test
 export PYBUILD_INSTALL_ARGS_python3 = --install-lib=usr/share/thefuck/ --install-scripts=usr/share/thefuck/ --install-layout=deb
+export PYBUILD_TEST_PYTEST=1
+export PYBUILD_TEST_ARGS=tests/ --ignore=tests/test_readme.py
 
 %:
 	dh $@ --with python3 --buildsystem=pybuild

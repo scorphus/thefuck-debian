@@ -1,3 +1,25 @@
+thefuck (3.30-1) UNRELEASED; urgency=medium
+
+  * Maintainer upload
+  * New upstream version 3.30
+  * debian/control
+    - Change maintainer to Debian Python Team
+    - Set Uploaders attribute
+    - Use debhelper-compat 13
+    - Upgrade Standards-Version to 4.5.1
+    - Sort packages in Depends
+    - Update package description
+  * Add patch:
+    - 0002-mock_Popen_in_test_go_unknown_command.patch
+  * debian/control
+    - Enable tests with pytest ignoring `test_readme`
+  * debian/copyright
+    - Include text for the BSD-2Clause License
+  * debian/thefuck.manpages
+    - Add thefuck.1
+
+ -- Pablo Santiago Blum de Aguiar <scorphus@gmail.com>  Mon, 08 Mar 2021 17:55:59 +0100
+
 thefuck (3.29-0.1) unstable; urgency=medium
 
   * Non-maintainer upload

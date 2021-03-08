@@ -1,1 +1,2 @@
 0001-clean_scripts_install.patch
+0002-mock_Popen_in_test_go_unknown_command.patch
